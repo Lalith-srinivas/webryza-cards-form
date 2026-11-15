@@ -19,6 +19,76 @@ function assert(condition, message) {
 }
 
 // ----------------------------------------------------------------------
+// 0. Username-to-Authentication Mapping Logic
+// ----------------------------------------------------------------------
+console.log("Scenario 0: Username-to-Authentication Identifier Mapping");
+
+function normalizeUsername(username) {
+  if (!username || typeof username !== "string") return "";
+  return username.toLowerCase().trim();
+}
+
+function resolveInternalEmail(usernameOrId, mockUsernames = {}, mockPartners = {}) {
+  const clean = normalizeUsername(usernameOrId);
+  if (clean.includes("@")) return clean;
+
+  if (mockUsernames[clean]) {
+    return mockUsernames[clean].internalEmail || `${clean}@partner.webryza.in`;
+  }
+
+  const upperCode = clean.toUpperCase();
+  if (mockPartners[upperCode]) {
+    const pUsername = normalizeUsername(mockPartners[upperCode].username);
+    if (pUsername) return `${pUsername}@partner.webryza.in`;
+  }
+
+  return `${clean}@partner.webryza.in`;
+}
+
+const mockUsernameDb = {
+  srilakshmi: {
+    username: "srilakshmi",
+    partnerCode: "SHOP001",
+    internalEmail: "srilakshmi@partner.webryza.in",
+  },
+  royal_cards: {
+    username: "royal_cards",
+    partnerCode: "SHOP002",
+    internalEmail: "royal_cards@partner.webryza.in",
+  },
+};
+
+const mockPartnerDb = {
+  SHOP001: { partnerCode: "SHOP001", username: "srilakshmi", shopName: "Sri Lakshmi Wedding Cards" },
+  SHOP002: { partnerCode: "SHOP002", username: "royal_cards", shopName: "Royal Cards" },
+};
+
+assert(
+  normalizeUsername(" SriLakshmi ") === "srilakshmi",
+  "normalizeUsername trims whitespace and converts to lowercase"
+);
+
+assert(
+  resolveInternalEmail("srilakshmi", mockUsernameDb, mockPartnerDb) === "srilakshmi@partner.webryza.in",
+  "Resolves username 'srilakshmi' to 'srilakshmi@partner.webryza.in'"
+);
+
+assert(
+  resolveInternalEmail("SHOP001", mockUsernameDb, mockPartnerDb) === "srilakshmi@partner.webryza.in",
+  "Resolves partner ID 'SHOP001' to partner's username 'srilakshmi@partner.webryza.in'"
+);
+
+assert(
+  resolveInternalEmail("newpartner", mockUsernameDb, mockPartnerDb) === "newpartner@partner.webryza.in",
+  "Deterministic fallback generates 'newpartner@partner.webryza.in'"
+);
+
+assert(
+  resolveInternalEmail("custom@partner.webryza.in") === "custom@partner.webryza.in",
+  "Direct email format is preserved"
+);
+
+// ----------------------------------------------------------------------
 // 1. Partner Dashboard Metrics & Payment Status Computation
 // ----------------------------------------------------------------------
 console.log("Scenario 1: Partner Metrics & Real-time Financial Calculations");

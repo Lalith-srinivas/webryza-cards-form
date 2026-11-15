@@ -52,12 +52,12 @@ export default function PartnerDashboardPage() {
 
   // Real-time Firestore Listener for this partner's projects
   useEffect(() => {
-    if (!partnerProfile?.partnerId && !partnerProfile?.id) {
+    if (!partnerProfile?.partnerCode && !partnerProfile?.partnerId && !partnerProfile?.id) {
       setLoading(false);
       return;
     }
 
-    const partnerCode = (partnerProfile.partnerId || partnerProfile.id || "").toString().trim();
+    const partnerCode = (partnerProfile.partnerCode || partnerProfile.partnerId || partnerProfile.id || "").toString().trim();
 
     setLoading(true);
     setError(null);
@@ -80,13 +80,15 @@ export default function PartnerDashboardPage() {
           const remainingAmount = Math.max(0, webryzaAmount - amountPaid);
 
           let computedStatus = "Pending";
-          if (amountPaid >= webryzaAmount) {
+          if (amountPaid >= webryzaAmount && webryzaAmount > 0) {
             computedStatus = "Paid";
           } else if (amountPaid > 0) {
             computedStatus = "Partial";
           } else if (data.paymentStatus) {
-            computedStatus =
-              data.paymentStatus.charAt(0).toUpperCase() + data.paymentStatus.slice(1).toLowerCase();
+            const norm = data.paymentStatus.toLowerCase();
+            if (norm === "paid") computedStatus = "Paid";
+            else if (norm === "partial") computedStatus = "Partial";
+            else computedStatus = "Pending";
           }
 
           // Normalize wedding date

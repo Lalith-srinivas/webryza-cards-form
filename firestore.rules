@@ -1,4 +1,5 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -6,26 +7,32 @@ service cloud.firestore {
     // AUTHENTICATION & ROLE HELPERS
     // =========================================================================
 
-    // Check if caller is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if caller is an Admin (authenticated and not a partner account)
+    // WebRyza Administrator: Any authenticated staff member who is not a partner
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.admin == true ||
-        !exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid))
-      );
+      return isAuthenticated() && 
+        (!('role' in request.auth.token) || request.auth.token.role != 'partner');
     }
 
-    // Check if caller is the assigned partner for this wedding card
+    // Partner Role: Authenticated user with role == 'partner' claim
+    function isPartner() {
+      return isAuthenticated() && 
+        (('role' in request.auth.token && request.auth.token.role == 'partner') ||
+         exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)));
+    }
+
+    // Check if caller is the assigned partner for this wedding project
     function isPartnerOwner(cardData) {
-      return request.auth != null && (
+      return isPartner() && (
         cardData.partnerId == request.auth.uid ||
+        cardData.partnerId == request.auth.token.partnerCode ||
+        cardData.partnerId == request.auth.token.partnerId ||
         cardData.partnerId == request.auth.token.email.split('@')[0] ||
         (exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)) &&
-         cardData.partnerId == get(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)).data.partnerId)
+         cardData.partnerId == get(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)).data.partnerCode)
       );
     }
 
@@ -41,18 +48,42 @@ service cloud.firestore {
     match /wedding_cards/{cardId} {
       allow create: if request.resource.data.brideName is string
                     && request.resource.data.groomName is string
-                    && request.resource.data.phone is string;
+                    && request.resource.data.phone is string
+                    && request.resource.data.amountCharged is number
+                    && request.resource.data.amountCharged >= 1500;
       
       allow read: if isAdmin() || isPartnerOwner(resource.data);
       allow update, delete: if isAdmin();
     }
 
     // Partner directory (QR codes / print shop referrals)
-    // - Public can read to validate partner/referral codes and display shop names
-    // - Only Admin can create, edit, or delete partner accounts
+    // - Administrators have full control
+    // - Partners can read their own record
+    // - Public registration form can read active partner info to display shop name
     match /wedding_partners/{partnerId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
+
+      allow get: if (isPartner() && (
+        request.auth.uid == resource.data.authUid ||
+        request.auth.token.partnerCode == partnerId ||
+        request.auth.token.partnerId == partnerId
+      )) || (resource.data.isActive == true);
+    }
+
+    // Partner Usernames Mapping Collection
+    match /partner_usernames/{username} {
+      allow read, write: if isAdmin();
+      // Public / partner login lookup
+      allow get: if true;
+    }
+
+    // Wedding Payments Collection
+    match /wedding_payments/{paymentId} {
+      allow read, write: if isAdmin();
+      allow read: if isPartner() && (
+        resource.data.partnerId == request.auth.token.partnerCode ||
+        resource.data.partnerId == request.auth.token.partnerId
+      );
     }
 
     // Digital wedding RSVPs / Guest wishes / Orders
@@ -70,8 +101,6 @@ service cloud.firestore {
     // 2. WEBRYZA CONTACT FORMS & CLIENT INQUIRIES
     // =========================================================================
 
-    // Public can submit contact messages, inquiries, and quote requests
-    // Only Admin can read messages and manage client requests
     match /inquiries/{inquiryId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
@@ -121,10 +150,14 @@ service cloud.firestore {
       }
     }
 
+    // Existing Projects Collection
+    match /projects/{projectId} {
+      allow read, write: if isAdmin();
+    }
+
     // =========================================================================
     // 4. DEFAULT FALLBACK
     // =========================================================================
-    // All other collections require admin authentication
     match /{document=**} {
       allow read, write: if isAdmin();
     }
