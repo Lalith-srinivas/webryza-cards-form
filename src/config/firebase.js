@@ -1,6 +1,7 @@
 // Firebase Configuration for WebRyza Cards Form
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 export const firebaseConfig = {
@@ -18,6 +19,9 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Firebase Authentication
+export const auth = getAuth(app);
 
 // Initialize Analytics conditionally (only in supported browser environments)
 export let analytics = null;

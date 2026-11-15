@@ -10,12 +10,6 @@ All submitted wedding details are saved directly into the existing WebRyza Fires
 
 ```text
 WebRyza-Cards-Form/
-├── netlify/
-│   └── functions/
-│       └── submit-registration.js   # Serverless function with server-side validation & commission calculation
-├── functions/                       # Firebase Cloud Functions (alternative backend deployment)
-│   ├── index.js                     # submitWeddingRegistration HTTPS Callable Cloud Function
-│   └── package.json
 ├── public/
 │   ├── favicon.svg                  # Luxury interlocking golden wedding rings monogram
 │   └── _redirects                   # Netlify SPA client routing rules
@@ -29,11 +23,18 @@ WebRyza-Cards-Form/
 │   │   ├── StepEvents.jsx           # Section C: Dynamic Haldi, Mehendi, Sangeet, Reception cards
 │   │   ├── StepPackagePricing.jsx   # Sections D & E: AI Video toggle & Total Amount input
 │   │   ├── StepReview.jsx           # Step 5: Complete summary review before final submission
-│   │   └── SuccessModal.jsx         # Section 10: Confirmation screen, Ref ID, WhatsApp assistance
+│   │   ├── SuccessModal.jsx         # Section 10: Confirmation screen, Ref ID, WhatsApp assistance
+│   │   ├── PartnerLoginFloatingButton.jsx # Floating "Partner Login" button at bottom-right
+│   │   └── ProtectedRoute.jsx       # Route guard for authenticated active partners
+│   ├── pages/
+│   │   ├── PublicFormPage.jsx       # Public wedding registration page (/)
+│   │   ├── PartnerLoginPage.jsx     # Professional Partner Login portal (/admin/login)
+│   │   └── PartnerDashboardPage.jsx # Real-time SaaS Partner Dashboard (/admin/dashboard)
 │   ├── config/
-│   │   └── firebase.js              # Initialized Firebase Client SDK for webryza-admin
+│   │   └── firebase.js              # Initialized Firebase Client SDK (Auth, Firestore, Analytics)
 │   ├── context/
-│   │   └── FormContext.jsx          # Multi-step state, validations, partner detection
+│   │   ├── FormContext.jsx          # Public form state, validations, partner referral detection
+│   │   └── PartnerAuthContext.jsx   # Partner authentication, session persistence, active check
 │   ├── services/
 │   │   ├── partnerService.js        # Retrieves & verifies partner from wedding_partners
 │   │   └── registrationService.js   # Submits data to wedding_cards via backend/Firestore
@@ -41,12 +42,14 @@ WebRyza-Cards-Form/
 │   │   ├── commission.js            # WebRyza commission business calculation rules
 │   │   ├── validation.js            # Strict validation for phone, email, URLs, amounts, events
 │   │   └── formatters.js            # INR currency and date formatters
-│   ├── App.jsx                      # Main application orchestrator
+│   ├── App.jsx                      # React Router configuration for /, /admin/login, /admin/dashboard
 │   ├── index.css                    # Luxury cream, ivory, soft gold theme & glassmorphic styling
 │   └── main.jsx                     # React entry point
-├── firestore.rules                  # Recommended Firestore Security Rules for public forms
+├── firestore.rules                  # Firestore Security Rules with partner read isolation & admin write
+├── vercel.json                      # Vercel SPA routing and cache headers
 ├── netlify.toml                     # Netlify build & functions configuration
-├── test-scenarios.js                # Test suite covering all 15 business scenarios
+├── test-scenarios.js                # Test suite covering all 15 registration scenarios
+├── test-partner-portal.js           # Test suite covering Partner Portal metrics & auth scenarios
 ├── .env.example                     # Environment variables template
 ├── package.json
 └── vite.config.js
