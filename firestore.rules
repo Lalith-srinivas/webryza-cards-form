@@ -1,57 +1,132 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // =========================================================================
+    // AUTHENTICATION & ROLE HELPERS
+    // =========================================================================
+
+    // Check if caller is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // Check if caller is an Admin (authenticated and not a partner account)
     function isAdmin() {
       return request.auth != null && (
         request.auth.token.admin == true ||
-        request.auth.token.email == "admin@webryza.in" ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        !exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid))
       );
     }
 
-    // 1. Partner directory:
-    // - Public can read partner details to verify QR codes and display shop names
-    // - Only WebRyza Admin can create, edit, or delete partner accounts
+    // Check if caller is the assigned partner for this wedding card
+    function isPartnerOwner(cardData) {
+      return request.auth != null && (
+        cardData.partnerId == request.auth.uid ||
+        cardData.partnerId == request.auth.token.email.split('@')[0] ||
+        (exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)) &&
+         cardData.partnerId == get(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)).data.partnerId)
+      );
+    }
+
+    // =========================================================================
+    // 1. WEDDING CARDS & REGISTRATIONS
+    // =========================================================================
+
+    // Wedding card form submissions from couples / clients
+    // - Public visitors can CREATE without login (with required bride, groom, phone)
+    // - Authenticated Partners can READ ONLY their own registered projects (Read-Only)
+    // - Admin can READ, UPDATE payment/website, and DELETE all projects
+    // - Partners CANNOT update or delete any project or payment data
+    match /wedding_cards/{cardId} {
+      allow create: if request.resource.data.brideName is string
+                    && request.resource.data.groomName is string
+                    && request.resource.data.phone is string;
+      
+      allow read: if isAdmin() || isPartnerOwner(resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // Partner directory (QR codes / print shop referrals)
+    // - Public can read to validate partner/referral codes and display shop names
+    // - Only Admin can create, edit, or delete partner accounts
     match /wedding_partners/{partnerId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 2. Wedding Cards Registrations:
-    // - Public can SUBMIT (create) their wedding registration
-    // - Public cannot read or modify any registrations
-    // - Authenticated Partners can READ ONLY their own registered projects (Read-Only)
-    // - Partners CANNOT edit, update, or delete any registration or payment data
-    // - WebRyza Admin has full access to read and update
-    match /wedding_cards/{registrationId} {
-      allow create: if request.resource.data.brideName is string
-                    && request.resource.data.groomName is string
-                    && request.resource.data.phone is string
-                    && request.resource.data.amountCharged is number
-                    && request.resource.data.amountCharged >= 1500;
-
-      // Read permission: Admin can read all; Partners can read ONLY projects matching their partnerId
-      allow read: if isAuthenticated() && (
-        isAdmin() ||
-        resource.data.partnerId == request.auth.uid ||
-        (exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)) &&
-         resource.data.partnerId == get(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)).data.partnerId) ||
-        resource.data.partnerId == request.auth.token.email.split('@')[0]
-      );
-
-      // Only WebRyza Admin can update payments, website URLs, or delete registrations
-      allow update, delete: if isAdmin();
+    // Digital wedding RSVPs / Guest wishes / Orders
+    match /wedding_rsvps/{rsvpId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
 
-    // Preserve existing admin panel rules for other collections
+    match /wedding_orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 2. WEBRYZA CONTACT FORMS & CLIENT INQUIRIES
+    // =========================================================================
+
+    // Public can submit contact messages, inquiries, and quote requests
+    // Only Admin can read messages and manage client requests
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /contacts/{contactId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /contact_submissions/{submissionId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 3. GESTURE STUDIO & COMMUNITY (If sharing this database)
+    // =========================================================================
+
+    match /leaderboards/{board}/entries/{userId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /usernames/{username} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /{allChildren=**} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // =========================================================================
+    // 4. DEFAULT FALLBACK
+    // =========================================================================
+    // All other collections require admin authentication
     match /{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAdmin();
     }
   }
 }
