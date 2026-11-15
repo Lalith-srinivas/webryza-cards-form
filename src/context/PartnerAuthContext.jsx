@@ -7,7 +7,7 @@ import {
   browserLocalPersistence,
   updatePassword,
 } from "firebase/auth";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 const PartnerAuthContext = createContext(null);
@@ -71,6 +71,18 @@ export const PartnerAuthProvider = ({ children }) => {
       }
 
       const partnerCode = partnerData.partnerCode || partnerId;
+
+      // Auto-bind authUid in Firestore if not already bound
+      if (!partnerData.authUid || partnerData.authUid !== authUser.uid) {
+        try {
+          await updateDoc(partnerDocRef, {
+            authUid: authUser.uid,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (bindErr) {
+          console.warn("Could not auto-bind authUid on client:", bindErr);
+        }
+      }
 
       return {
         profile: {

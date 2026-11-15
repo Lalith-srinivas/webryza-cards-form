@@ -17,23 +17,23 @@ service cloud.firestore {
         (!('role' in request.auth.token) || request.auth.token.role != 'partner');
     }
 
-    // Partner Role: Authenticated user with role == 'partner' claim
+    // Partner Role: Authenticated user with deterministic partner email or role claim
     function isPartner() {
       return isAuthenticated() && 
-        (('role' in request.auth.token && request.auth.token.role == 'partner') ||
-         exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)));
+        (request.auth.token.email.matches('.*@partner\\.webryza\\.in$') ||
+         ('role' in request.auth.token && request.auth.token.role == 'partner'));
     }
 
-    // Check if caller is the assigned partner for this wedding project
-    function isPartnerOwner(cardData) {
-      return isPartner() && (
-        cardData.partnerId == request.auth.uid ||
-        cardData.partnerId == request.auth.token.partnerCode ||
-        cardData.partnerId == request.auth.token.partnerId ||
-        cardData.partnerId == request.auth.token.email.split('@')[0] ||
-        (exists(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)) &&
-         cardData.partnerId == get(/databases/$(database)/documents/wedding_partners/$(request.auth.uid)).data.partnerCode)
-      );
+    // Helper to check if a partner owns a record via their authUid or loginEmail in wedding_partners
+    function isPartnerRecordOwner(partnerId) {
+      return isPartner() && 
+        partnerId != null && 
+        partnerId != '' &&
+        exists(/databases/$(database)/documents/wedding_partners/$(partnerId)) &&
+        (
+          get(/databases/$(database)/documents/wedding_partners/$(partnerId)).data.authUid == request.auth.uid ||
+          get(/databases/$(database)/documents/wedding_partners/$(partnerId)).data.loginEmail == request.auth.token.email
+        );
     }
 
     // =========================================================================
@@ -52,7 +52,7 @@ service cloud.firestore {
                     && request.resource.data.amountCharged is number
                     && request.resource.data.amountCharged >= 1500;
       
-      allow read: if isAdmin() || isPartnerOwner(resource.data);
+      allow read: if isAdmin() || isPartnerRecordOwner(resource.data.partnerId);
       allow update, delete: if isAdmin();
     }
 
@@ -63,11 +63,19 @@ service cloud.firestore {
     match /wedding_partners/{partnerId} {
       allow read, write: if isAdmin();
 
-      allow get: if (isPartner() && (
-        request.auth.uid == resource.data.authUid ||
-        request.auth.token.partnerCode == partnerId ||
-        request.auth.token.partnerId == partnerId
-      )) || (resource.data.isActive == true);
+      // Partners can read only their own partner profile established by their authUid or loginEmail
+      allow get: if isPartner() && (
+        resource.data.authUid == request.auth.uid ||
+        resource.data.loginEmail == request.auth.token.email
+      );
+
+      // Allow partner to auto-bind their authUid upon login
+      allow update: if isPartner() && 
+        (resource.data.loginEmail == request.auth.token.email || resource.data.authUid == request.auth.uid) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authUid', 'updatedAt']);
+
+      // Public registration form can read active partner info to display shop name
+      allow get: if resource.data.isActive == true;
     }
 
     // Partner Usernames Mapping Collection

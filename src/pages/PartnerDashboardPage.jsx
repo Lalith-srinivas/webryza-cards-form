@@ -161,7 +161,11 @@ export default function PartnerDashboardPage() {
       },
       (err) => {
         console.error("Firestore error for partner cards:", err);
-        setError("Unable to sync wedding projects. Please check your internet connection.");
+        if (err.code === "permission-denied" || err.message?.includes("permissions")) {
+          setError("Firestore Permission Denied: Unable to access wedding projects for this partner. Please ensure the Firestore Rules in Firebase Console allow partner read access.");
+        } else {
+          setError("Unable to sync wedding projects. Please check your internet connection.");
+        }
         setLoading(false);
       }
     );
