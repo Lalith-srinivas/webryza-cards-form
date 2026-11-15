@@ -3,6 +3,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  updatePassword,
 } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
@@ -10,12 +13,20 @@ import { auth, db } from "../config/firebase";
 const PartnerAuthContext = createContext(null);
 
 /**
- * Normalizes username to lowercase and trims whitespace
- * Exactly matches WebRyza Admin backend logic
+ * Normalizes username and generates deterministic synthetic login email
+ * Exact specification:
+ * const cleanUsername = String(usernameInput || '').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
+ * const loginEmail = `${cleanUsername}@partner.webryza.in`;
  */
-export function normalizeUsername(username) {
-  if (!username || typeof username !== "string") return "";
-  return username.toLowerCase().trim();
+export function getDeterministicLoginEmail(usernameInput) {
+  const cleanUsername = String(usernameInput || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9_-]/g, "");
+  return {
+    cleanUsername,
+    loginEmail: `${cleanUsername}@partner.webryza.in`,
+  };
 }
 
 export const PartnerAuthProvider = ({ children }) => {
@@ -25,94 +36,91 @@ export const PartnerAuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
 
   /**
-   * Helper to retrieve and verify partner profile from Firestore
+   * Helper to retrieve and verify partner record from Firestore
    */
-  const fetchPartnerProfile = async (user) => {
-    if (!user) return null;
-
+  const loadPartnerRecord = async (cleanUsername, authUser) => {
     try {
-      // 1. Force refresh token to get latest Custom Claims
-      const tokenResult = await user.getIdTokenResult(true);
-      let partnerCode = tokenResult.claims?.partnerCode || tokenResult.claims?.partnerId;
+      // 1. Read partner_usernames/${cleanUsername} to retrieve partnerId
+      const usernameDocRef = doc(db, "partner_usernames", cleanUsername);
+      const usernameSnap = await getDoc(usernameDocRef);
 
-      // 2. If partnerCode is not in custom claims, derive from email or partner_usernames
-      if (!partnerCode && user.email) {
-        const usernamePrefix = user.email
-          .replace("@partner.webryza.in", "")
-          .replace("@webryza.in", "")
-          .toLowerCase()
-          .trim();
-
-        try {
-          const usernameDoc = await getDoc(doc(db, "partner_usernames", usernamePrefix));
-          if (usernameDoc.exists()) {
-            partnerCode = usernameDoc.data().partnerCode || usernameDoc.data().partnerId;
-          }
-        } catch (err) {
-          console.warn("Could not read partner_usernames during profile lookup:", err);
-        }
-
-        if (!partnerCode) {
-          partnerCode = usernamePrefix.toUpperCase();
-        }
+      let partnerId = null;
+      if (usernameSnap.exists()) {
+        const uData = usernameSnap.data();
+        partnerId = uData.partnerId || uData.partnerCode;
       }
 
-      if (!partnerCode) return null;
+      // Fallback: If not found in partner_usernames, check if cleanUsername itself is the partnerCode
+      if (!partnerId) {
+        partnerId = cleanUsername.toUpperCase();
+      }
 
-      // 3. Fetch the verified partner document from wedding_partners
-      const partnerSnap = await getDoc(doc(db, "wedding_partners", partnerCode));
+      // 2. Read document wedding_partners/${partnerId}
+      const partnerDocRef = doc(db, "wedding_partners", partnerId);
+      const partnerSnap = await getDoc(partnerDocRef);
 
       if (!partnerSnap.exists()) {
-        console.warn(`Partner document '${partnerCode}' not found in wedding_partners.`);
-        return null;
+        return { error: "Partner profile not found. Please contact WebRyza administrator." };
       }
 
       const partnerData = partnerSnap.data();
 
-      // 4. Verify account is active
-      const isActive = partnerData.isActive === true || partnerData.isActive === "true";
-      if (!isActive) {
-        console.warn(`Partner account '${partnerCode}' is deactivated.`);
-        return { isDeactivated: true };
+      // 3. Verify account is active
+      if (partnerData.isActive === false || partnerData.isActive === "false") {
+        return { error: "Your partner account has been deactivated. Please contact WebRyza." };
       }
 
+      const partnerCode = partnerData.partnerCode || partnerId;
+
       return {
-        partnerId: partnerCode,
-        partnerCode: partnerCode,
-        shopName: partnerData.shopName || partnerCode,
-        ownerName: partnerData.ownerName || "",
-        phone: partnerData.phone || "",
-        email: partnerData.email || user.email,
-        username: partnerData.username || partnerCode.toLowerCase(),
-        isActive: true,
-        authUid: user.uid,
-        role: "partner",
+        profile: {
+          id: partnerSnap.id,
+          partnerId: partnerCode,
+          partnerCode: partnerCode,
+          shopName: partnerData.shopName || partnerCode,
+          ownerName: partnerData.ownerName || "",
+          phone: partnerData.phone || "",
+          email: partnerData.email || authUser.email,
+          username: partnerData.username || cleanUsername,
+          isActive: true,
+          authUid: authUser.uid,
+          role: "partner",
+          registrationUrl: `https://cards.webryza.in/?ref=${partnerCode}`,
+        },
       };
     } catch (err) {
-      console.error("Error retrieving partner profile:", err);
-      return null;
+      console.error("Error loading partner record:", err);
+      return { error: "Unable to load partner information. Please check your connection." };
     }
   };
 
-  // Listen to Firebase Auth state changes (Session Restoration)
+  // Listen to Firebase Auth state changes with persistence
   useEffect(() => {
+    // Configure local persistence
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn("Could not set browserLocalPersistence:", err);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        const profile = await fetchPartnerProfile(user);
+        const usernamePrefix = String(user.email || "")
+          .replace("@partner.webryza.in", "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9_-]/g, "");
 
-        if (profile?.isDeactivated) {
+        const result = await loadPartnerRecord(usernamePrefix, user);
+
+        if (result.error) {
+          console.warn("Session validation failed:", result.error);
           await signOut(auth);
           setCurrentUser(null);
           setPartnerProfile(null);
-          setAuthError("Your partner account has been deactivated. Please contact WebRyza Admin.");
-        } else if (profile) {
-          setPartnerProfile(profile);
+          setAuthError(result.error);
+        } else if (result.profile) {
+          setPartnerProfile(result.profile);
           setAuthError(null);
-        } else {
-          // Could not verify partner record
-          setCurrentUser(user);
-          setPartnerProfile(null);
         }
       } else {
         setCurrentUser(null);
@@ -124,28 +132,27 @@ export const PartnerAuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Real-time listener: if partner account is deactivated by WebRyza Admin, kick out immediately
+  // Real-time listener for partner active status
   useEffect(() => {
     if (!partnerProfile?.partnerCode) return;
 
-    const partnerRef = doc(db, "wedding_partners", partnerProfile.partnerCode);
+    const partnerDocRef = doc(db, "wedding_partners", partnerProfile.partnerCode);
     const unsub = onSnapshot(
-      partnerRef,
+      partnerDocRef,
       async (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const isActive = data.isActive === true || data.isActive === "true";
-          if (!isActive) {
-            console.warn("Live deactivation detected. Logging out partner session.");
+          if (data.isActive === false || data.isActive === "false") {
+            console.warn("Account deactivated remotely. Signing out partner.");
             await signOut(auth);
             setCurrentUser(null);
             setPartnerProfile(null);
-            setAuthError("Your partner account has been deactivated. Please contact WebRyza Admin.");
+            setAuthError("Your partner account has been deactivated. Please contact WebRyza.");
           }
         }
       },
       (err) => {
-        console.warn("Real-time partner status watch notice:", err);
+        console.warn("Partner status watch note:", err);
       }
     );
 
@@ -153,120 +160,86 @@ export const PartnerAuthProvider = ({ children }) => {
   }, [partnerProfile?.partnerCode]);
 
   /**
-   * Log in with Username and Password
-   * Seamlessly resolves username to the internal Firebase Auth identifier
+   * Log in using Username and Password
+   * Strict adherence to deterministic synthetic email construction
    */
-  const login = async (usernameOrId, password) => {
+  const login = async (usernameInput, passwordInput) => {
     setAuthError(null);
 
-    const rawInput = (usernameOrId || "").trim();
-    if (!rawInput || !password) {
+    const { cleanUsername, loginEmail } = getDeterministicLoginEmail(usernameInput);
+
+    if (!cleanUsername || !passwordInput) {
       throw new Error("Please enter both username and password.");
     }
 
-    const cleanUsername = normalizeUsername(rawInput);
-    let emailToUse = "";
+    // Set local browser persistence
+    await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-    // 1. Resolve identifier
-    if (cleanUsername.includes("@")) {
-      // User entered an email address directly
-      emailToUse = cleanUsername;
-    } else {
-      // Step A: Check partner_usernames collection
-      try {
-        const usernameSnap = await getDoc(doc(db, "partner_usernames", cleanUsername));
-        if (usernameSnap.exists()) {
-          const uData = usernameSnap.data();
-          emailToUse = uData.internalEmail || `${cleanUsername}@partner.webryza.in`;
-        }
-      } catch (e) {
-        console.warn("Notice checking partner_usernames:", e);
-      }
-
-      // Step B: If not found as username, check if user entered Partner ID (e.g. SHOP001)
-      if (!emailToUse) {
-        try {
-          const partnerSnap = await getDoc(doc(db, "wedding_partners", cleanUsername.toUpperCase()));
-          if (partnerSnap.exists()) {
-            const pData = partnerSnap.data();
-            const resolvedUsername = normalizeUsername(pData.username);
-            if (resolvedUsername) {
-              emailToUse = `${resolvedUsername}@partner.webryza.in`;
-            }
-          }
-        } catch (e) {
-          console.warn("Notice checking wedding_partners by partner code:", e);
-        }
-      }
-
-      // Step C: Deterministic mapping matching WebRyza Admin backend Cloud Functions
-      if (!emailToUse) {
-        emailToUse = `${cleanUsername}@partner.webryza.in`;
-      }
-    }
-
-    // 2. Authenticate via Firebase Authentication
+    // Authenticate with Firebase Authentication
     let userCredential;
     try {
-      userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
-    } catch (authError) {
-      console.error("Firebase Auth sign-in failed:", authError.code, authError.message);
+      userCredential = await signInWithEmailAndPassword(auth, loginEmail, passwordInput);
+    } catch (authErr) {
+      console.error("Firebase Auth error:", authErr.code, authErr.message);
 
       if (
-        authError.code === "auth/invalid-credential" ||
-        authError.code === "auth/user-not-found" ||
-        authError.code === "auth/wrong-password" ||
-        authError.code === "auth/invalid-email"
+        authErr.code === "auth/invalid-credential" ||
+        authErr.code === "auth/user-not-found" ||
+        authErr.code === "auth/wrong-password" ||
+        authErr.code === "auth/invalid-email"
       ) {
-        throw new Error("Incorrect username or password. Please verify your credentials and try again.");
-      } else if (authError.code === "auth/user-disabled") {
-        throw new Error("Your partner account has been deactivated. Please contact WebRyza Admin.");
-      } else if (authError.code === "auth/too-many-requests") {
-        throw new Error("Too many failed attempts. Please wait a few moments before trying again.");
-      } else if (authError.code === "auth/network-request-failed") {
+        throw new Error("Invalid username or password. Please check your credentials.");
+      } else if (authErr.code === "auth/user-disabled") {
+        throw new Error("Your partner account has been deactivated. Please contact WebRyza.");
+      } else if (authErr.code === "auth/too-many-requests") {
+        throw new Error("Too many failed attempts. Please wait a few moments and try again.");
+      } else if (authErr.code === "auth/network-request-failed") {
         throw new Error("Authentication service temporarily unavailable. Please check your internet connection.");
       }
 
-      throw new Error("Incorrect username or password. Please verify your credentials and try again.");
+      throw new Error("Invalid username or password. Please check your credentials.");
     }
 
-    const user = userCredential.user;
+    const authUser = userCredential.user;
 
-    // 3. Verify Partner Account Record & Active Status
-    const profile = await fetchPartnerProfile(user);
+    // Verify the partner record in Cloud Firestore
+    const result = await loadPartnerRecord(cleanUsername, authUser);
 
-    if (profile?.isDeactivated) {
+    if (result.error) {
       await signOut(auth);
-      throw new Error("Your partner account has been deactivated. Please contact WebRyza Admin.");
+      throw new Error(result.error);
     }
 
-    if (!profile) {
-      // Fallback baseline profile while custom claims or Firestore mapping synchronizes
-      const derivedCode = cleanUsername.toUpperCase();
-      const fallbackProfile = {
-        partnerId: derivedCode,
-        partnerCode: derivedCode,
-        shopName: derivedCode,
-        ownerName: "",
-        phone: "",
-        email: user.email,
-        username: cleanUsername,
-        isActive: true,
-        authUid: user.uid,
-        role: "partner",
-      };
-      setPartnerProfile(fallbackProfile);
-      setCurrentUser(user);
-      return user;
-    }
-
-    setPartnerProfile(profile);
-    setCurrentUser(user);
-    return user;
+    setCurrentUser(authUser);
+    setPartnerProfile(result.profile);
+    return result.profile;
   };
 
   /**
-   * Log out securely
+   * Self-service password change
+   */
+  const changePassword = async (newPassword) => {
+    if (!auth.currentUser) {
+      throw new Error("No authenticated partner session found.");
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error("New password must be at least 6 characters long.");
+    }
+
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (err) {
+      console.error("Password update error:", err.code, err.message);
+      if (err.code === "auth/requires-recent-login") {
+        throw new Error("For security, please log out and log in again before changing your password.");
+      }
+      throw new Error(err.message || "Failed to update password. Please try again.");
+    }
+  };
+
+  /**
+   * Logout
    */
   const logout = async () => {
     try {
@@ -275,7 +248,7 @@ export const PartnerAuthProvider = ({ children }) => {
       setPartnerProfile(null);
       setAuthError(null);
     } catch (err) {
-      console.error("Logout failed:", err);
+      console.error("Logout error:", err);
       throw err;
     }
   };
@@ -289,6 +262,7 @@ export const PartnerAuthProvider = ({ children }) => {
         authError,
         login,
         logout,
+        changePassword,
         isAuthenticated: !!currentUser && !!partnerProfile,
       }}
     >

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { usePartnerAuth } from "../context/PartnerAuthContext";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { formatINR, formatDatePretty } from "../utils/formatters";
+import PartnerQrCard from "../components/PartnerQrCard";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 import {
   Store,
   Layers,
@@ -18,7 +20,6 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown,
   Calendar,
   Heart,
   ShieldCheck,
@@ -26,6 +27,12 @@ import {
   ArrowUpDown,
   RefreshCw,
   FolderOpen,
+  KeyRound,
+  QrCode,
+  DollarSign,
+  TrendingUp,
+  CreditCard,
+  Building2,
 } from "lucide-react";
 
 export default function PartnerDashboardPage() {
@@ -36,13 +43,14 @@ export default function PartnerDashboardPage() {
   const [error, setError] = useState(null);
 
   // UI Navigation & Mobile Menu State
-  const [currentTab, setCurrentTab] = useState("overview"); // "overview" | "projects"
+  const [currentTab, setCurrentTab] = useState("overview"); // "overview" | "projects" | "qr"
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Search, Filter, Sort & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "pending" | "partial" | "paid"
-  const [dateFilter, setDateFilter] = useState("all"); // "all" | "upcoming" | "past"
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all"); // "all" | "pending" | "partial" | "paid"
+  const [projectStatusFilter, setProjectStatusFilter] = useState("all"); // "all" | "confirmed" | "building" | "completed" | "cancelled"
   const [sortOption, setSortOption] = useState("newest"); // "newest" | "oldest" | "weddingDate"
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -57,12 +65,17 @@ export default function PartnerDashboardPage() {
       return;
     }
 
-    const partnerCode = (partnerProfile.partnerCode || partnerProfile.partnerId || partnerProfile.id || "").toString().trim();
+    const partnerCode = (
+      partnerProfile.partnerCode ||
+      partnerProfile.partnerId ||
+      partnerProfile.id ||
+      ""
+    ).toString().trim();
 
     setLoading(true);
     setError(null);
 
-    // Query wedding_cards collection filtered strictly by this partner's ID
+    // Query wedding_cards collection where partnerId == partner.partnerCode
     const q = query(
       collection(db, "wedding_cards"),
       where("partnerId", "==", partnerCode)
@@ -74,21 +87,38 @@ export default function PartnerDashboardPage() {
         const docs = snapshot.docs.map((docSnap) => {
           const data = docSnap.data();
 
-          // Calculate payment status dynamically from financial fields
+          // Financial field values
+          const totalCharged = Number(data.amountCharged || 0);
           const webryzaAmount = Number(data.webryzaShare || data.amountDueToWebryza || 1500);
           const amountPaid = Number(data.amountReceivedByWebryza || 0);
           const remainingAmount = Math.max(0, webryzaAmount - amountPaid);
+          const partnerEarnings = Math.max(0, totalCharged - webryzaAmount);
 
-          let computedStatus = "Pending";
+          // Payment Status
+          let computedPaymentStatus = "Pending";
           if (amountPaid >= webryzaAmount && webryzaAmount > 0) {
-            computedStatus = "Paid";
+            computedPaymentStatus = "Paid";
           } else if (amountPaid > 0) {
-            computedStatus = "Partial";
+            computedPaymentStatus = "Partial";
           } else if (data.paymentStatus) {
             const norm = data.paymentStatus.toLowerCase();
-            if (norm === "paid") computedStatus = "Paid";
-            else if (norm === "partial") computedStatus = "Partial";
-            else computedStatus = "Pending";
+            if (norm === "paid") computedPaymentStatus = "Paid";
+            else if (norm === "partial") computedPaymentStatus = "Partial";
+            else computedPaymentStatus = "Pending";
+          }
+
+          // Project Status (Confirmed / Building / Completed / Cancelled)
+          let computedProjectStatus = "Confirmed";
+          if (data.projectStatus) {
+            computedProjectStatus = data.projectStatus;
+          } else if (data.websiteUrl && data.websiteUrl.trim() !== "") {
+            computedProjectStatus = "Completed";
+          } else if (data.status) {
+            const s = data.status.toLowerCase();
+            if (s === "building" || s === "in_progress") computedProjectStatus = "Building";
+            else if (s === "completed" || s === "done") computedProjectStatus = "Completed";
+            else if (s === "cancelled") computedProjectStatus = "Cancelled";
+            else computedProjectStatus = "Confirmed";
           }
 
           // Normalize wedding date
@@ -113,10 +143,13 @@ export default function PartnerDashboardPage() {
           return {
             id: docSnap.id,
             ...data,
-            computedStatus,
+            totalCharged,
             webryzaAmount,
             amountPaid,
             remainingAmount,
+            partnerEarnings,
+            computedPaymentStatus,
+            computedProjectStatus,
             formattedWeddingDate,
             rawDateObj,
             createdMillis,
@@ -127,8 +160,8 @@ export default function PartnerDashboardPage() {
         setLoading(false);
       },
       (err) => {
-        console.error("Firestore listener error for partner projects:", err);
-        setError("Unable to load real-time wedding projects. Please check your internet connection.");
+        console.error("Firestore error for partner cards:", err);
+        setError("Unable to sync wedding projects. Please check your internet connection.");
         setLoading(false);
       }
     );
@@ -147,28 +180,31 @@ export default function PartnerDashboardPage() {
   };
 
   // --------------------------------------------------------------------------
-  // Summary Metrics Calculations (Real-time)
+  // Financial Summary Metrics Cards (Exact 6 required metrics!)
   // --------------------------------------------------------------------------
   const metrics = useMemo(() => {
     let totalProjects = projects.length;
-    let totalDue = 0;
-    let totalPaid = 0;
-    let pendingCount = 0;
+    let totalAmountCharged = 0;
+    let totalWebRyzaShare = 0;
+    let totalAmountPaid = 0;
+    let remainingBalanceDue = 0;
+    let partnerEarnings = 0;
 
     projects.forEach((p) => {
-      totalDue += p.remainingAmount;
-      totalPaid += p.amountPaid;
-
-      if (p.computedStatus === "Pending" || p.computedStatus === "Partial") {
-        pendingCount += 1;
-      }
+      totalAmountCharged += p.totalCharged;
+      totalWebRyzaShare += p.webryzaAmount;
+      totalAmountPaid += p.amountPaid;
+      remainingBalanceDue += p.remainingAmount;
+      partnerEarnings += p.partnerEarnings;
     });
 
     return {
       totalProjects,
-      totalDue,
-      totalPaid,
-      pendingCount,
+      totalAmountCharged,
+      totalWebRyzaShare,
+      totalAmountPaid,
+      remainingBalanceDue,
+      partnerEarnings,
     };
   }, [projects]);
 
@@ -178,7 +214,7 @@ export default function PartnerDashboardPage() {
   const filteredProjects = useMemo(() => {
     return projects
       .filter((p) => {
-        // Search by bride or groom name
+        // Search by bride name, groom name, or phone number
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const brideMatch = (p.brideName || "").toLowerCase().includes(q);
@@ -187,19 +223,18 @@ export default function PartnerDashboardPage() {
           if (!brideMatch && !groomMatch && !phoneMatch) return false;
         }
 
-        // Status Filter
-        if (statusFilter !== "all") {
-          if (p.computedStatus.toLowerCase() !== statusFilter.toLowerCase()) {
+        // Filter by Payment Status
+        if (paymentStatusFilter !== "all") {
+          if (p.computedPaymentStatus.toLowerCase() !== paymentStatusFilter.toLowerCase()) {
             return false;
           }
         }
 
-        // Date Filter
-        if (dateFilter !== "all" && p.rawDateObj) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          if (dateFilter === "upcoming" && p.rawDateObj < today) return false;
-          if (dateFilter === "past" && p.rawDateObj >= today) return false;
+        // Filter by Project Status
+        if (projectStatusFilter !== "all") {
+          if (p.computedProjectStatus.toLowerCase() !== projectStatusFilter.toLowerCase()) {
+            return false;
+          }
         }
 
         return true;
@@ -218,7 +253,7 @@ export default function PartnerDashboardPage() {
         }
         return 0;
       });
-  }, [projects, searchQuery, statusFilter, dateFilter, sortOption]);
+  }, [projects, searchQuery, paymentStatusFilter, projectStatusFilter, sortOption]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
@@ -233,18 +268,21 @@ export default function PartnerDashboardPage() {
     }
   };
 
+  const partnerCode = partnerProfile?.partnerCode || partnerProfile?.partnerId || "SHOP001";
+  const shopName = partnerProfile?.shopName || "Partner Store";
+
   return (
-    <div className="min-h-screen bg-[#0F0D0B] text-[#FAF7F2] flex flex-col md:flex-row antialiased">
+    <div className="min-h-screen bg-[#0A0908] text-[#FAF7F2] flex flex-col md:flex-row antialiased selection:bg-[#39FF14] selection:text-[#0A0908]">
       {/* -------------------------------------------------------------------- */}
-      {/* SIDEBAR: Modern SaaS Dark Sidebar */}
+      {/* SIDEBAR: Modern SaaS Dark Sidebar with Neon Green Accent */}
       {/* -------------------------------------------------------------------- */}
-      <aside className="hidden md:flex flex-col justify-between w-64 bg-[#141210] border-r border-[#26211C] p-5 shrink-0 min-h-screen sticky top-0">
+      <aside className="hidden md:flex flex-col justify-between w-64 bg-[#12100E] border-r border-[#26211C] p-5 shrink-0 min-h-screen sticky top-0">
         <div>
           {/* Logo Branding */}
           <div className="flex items-center space-x-3 pb-6 border-b border-[#26211C]">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#D4AF37] via-[#F3E5AB] to-[#B8860B] p-[1.5px] shadow-sm flex items-center justify-center">
-              <div className="w-full h-full rounded-xl bg-[#141210] flex items-center justify-center">
-                <Store size={18} className="text-[#D4AF37]" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#39FF14]/30 via-[#10B981]/20 to-[#39FF14]/10 border border-[#39FF14]/50 p-[1.5px] shadow-[0_0_15px_rgba(57,255,20,0.2)] flex items-center justify-center">
+              <div className="w-full h-full rounded-xl bg-[#0A0908] flex items-center justify-center">
+                <Store size={18} className="text-[#39FF14]" />
               </div>
             </div>
             <div>
@@ -252,29 +290,34 @@ export default function PartnerDashboardPage() {
                 <span className="font-serif text-lg font-bold tracking-tight text-[#FAF7F2]">
                   WebRyza
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#39FF14] shadow-[0_0_8px_#39FF14] animate-pulse"></span>
               </div>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[#93611D]">
-                Partner Portal
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#39FF14]">
+                Partner Admin
               </span>
             </div>
           </div>
 
           {/* Partner Info Summary in Sidebar */}
-          <div className="my-5 p-3 rounded-2xl bg-[#1A1714] border border-[#26211C]">
+          <div className="my-5 p-3.5 rounded-2xl bg-[#181512] border border-[#39FF14]/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
             <div className="flex items-center justify-between text-[11px] text-[#A89F91] mb-1">
-              <span>Partner Shop:</span>
-              <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+              <span>Partner Store:</span>
+              <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-[#39FF14] bg-[#39FF14]/10 border border-[#39FF14]/30 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14]"></span>
                 <span>Active</span>
               </span>
             </div>
             <p className="font-semibold text-sm text-[#FAF7F2] truncate">
-              {partnerProfile?.shopName || "Partner Shop"}
+              {shopName}
             </p>
-            <p className="text-xs text-[#D4AF37] font-mono mt-0.5 font-bold">
-              ID: {partnerProfile?.partnerId || partnerProfile?.id || "SHOP001"}
-            </p>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-xs text-[#39FF14] font-mono font-bold">
+                {partnerCode}
+              </span>
+              <span className="text-[10px] text-[#7A7165]">
+                @{partnerProfile?.username || "partner"}
+              </span>
+            </div>
           </div>
 
           {/* Navigation Items */}
@@ -287,12 +330,12 @@ export default function PartnerDashboardPage() {
               }}
               className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 currentTab === "overview"
-                  ? "bg-[#D4AF37]/15 text-[#E6CA65] border border-[#D4AF37]/30 shadow-xs"
-                  : "text-[#A89F91] hover:bg-[#1C1814] hover:text-[#FAF7F2]"
+                  ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/40 shadow-[0_0_12px_rgba(57,255,20,0.15)]"
+                  : "text-[#A89F91] hover:bg-[#181512] hover:text-[#FAF7F2]"
               }`}
             >
               <Layers size={16} />
-              <span>Overview</span>
+              <span>Dashboard Overview</span>
             </button>
 
             <button
@@ -303,17 +346,42 @@ export default function PartnerDashboardPage() {
               }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 currentTab === "projects"
-                  ? "bg-[#D4AF37]/15 text-[#E6CA65] border border-[#D4AF37]/30 shadow-xs"
-                  : "text-[#A89F91] hover:bg-[#1C1814] hover:text-[#FAF7F2]"
+                  ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/40 shadow-[0_0_12px_rgba(57,255,20,0.15)]"
+                  : "text-[#A89F91] hover:bg-[#181512] hover:text-[#FAF7F2]"
               }`}
             >
               <div className="flex items-center space-x-3">
                 <Heart size={16} />
-                <span>My Wedding Projects</span>
+                <span>Wedding Projects</span>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-[#26211C] text-[10px] font-bold text-[#D8CDBF]">
                 {projects.length}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentTab("qr");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                currentTab === "qr"
+                  ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/40 shadow-[0_0_12px_rgba(57,255,20,0.15)]"
+                  : "text-[#A89F91] hover:bg-[#181512] hover:text-[#FAF7F2]"
+              }`}
+            >
+              <QrCode size={16} />
+              <span>QR Code & Referral Link</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#A89F91] hover:bg-[#181512] hover:text-[#39FF14] transition-all"
+            >
+              <KeyRound size={16} />
+              <span>Change Password</span>
             </button>
           </nav>
         </div>
@@ -334,42 +402,53 @@ export default function PartnerDashboardPage() {
       {/* -------------------------------------------------------------------- */}
       {/* MOBILE TOP BAR */}
       {/* -------------------------------------------------------------------- */}
-      <header className="md:hidden bg-[#141210] border-b border-[#26211C] p-4 flex items-center justify-between sticky top-0 z-30">
+      <header className="md:hidden bg-[#12100E] border-b border-[#26211C] p-4 flex items-center justify-between sticky top-0 z-30 shadow-md">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#D4AF37] to-[#B8860B] p-[1px] flex items-center justify-center">
-            <div className="w-full h-full rounded-lg bg-[#141210] flex items-center justify-center">
-              <Store size={15} className="text-[#D4AF37]" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#39FF14] to-[#10B981] p-[1px] flex items-center justify-center">
+            <div className="w-full h-full rounded-lg bg-[#0A0908] flex items-center justify-center">
+              <Store size={15} className="text-[#39FF14]" />
             </div>
           </div>
           <div>
             <h1 className="font-serif text-sm font-bold text-[#FAF7F2] leading-tight">
-              {partnerProfile?.shopName || "WebRyza Partner"}
+              {shopName}
             </h1>
-            <p className="text-[10px] text-[#D4AF37] font-mono leading-none">
-              {partnerProfile?.partnerId || partnerProfile?.id || "SHOP001"}
+            <p className="text-[10px] text-[#39FF14] font-mono leading-none">
+              ID: {partnerCode}
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg bg-[#1C1814] text-[#FAF7F2] border border-[#26211C]"
-          aria-label="Toggle mobile menu"
-        >
-          {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="p-2 rounded-lg bg-[#181512] text-[#A89F91] hover:text-[#39FF14] border border-[#26211C]"
+            title="Change Password"
+          >
+            <KeyRound size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-lg bg-[#181512] text-[#FAF7F2] border border-[#26211C]"
+            aria-label="Toggle mobile menu"
+          >
+            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </header>
 
       {/* MOBILE DRAWER */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#141210] border-b border-[#26211C] p-5 space-y-4 shadow-2xl">
+        <div className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#12100E] border-b border-[#26211C] p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-[#26211C]">
               <div>
-                <p className="text-xs text-[#A89F91]">Logged in as:</p>
-                <p className="font-bold text-sm text-[#FAF7F2]">{partnerProfile?.shopName}</p>
-                <p className="text-xs text-[#D4AF37] font-mono">ID: {partnerProfile?.partnerId}</p>
+                <p className="text-xs text-[#A89F91]">Partner Shop:</p>
+                <p className="font-bold text-sm text-[#FAF7F2]">{shopName}</p>
+                <p className="text-xs text-[#39FF14] font-mono">ID: {partnerCode}</p>
               </div>
               <button
                 type="button"
@@ -389,12 +468,12 @@ export default function PartnerDashboardPage() {
                 }}
                 className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
                   currentTab === "overview"
-                    ? "bg-[#D4AF37]/15 text-[#E6CA65] border border-[#D4AF37]/30"
+                    ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/30"
                     : "text-[#A89F91]"
                 }`}
               >
                 <Layers size={16} />
-                <span>Overview</span>
+                <span>Dashboard Overview</span>
               </button>
 
               <button
@@ -405,7 +484,7 @@ export default function PartnerDashboardPage() {
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
                   currentTab === "projects"
-                    ? "bg-[#D4AF37]/15 text-[#E6CA65] border border-[#D4AF37]/30"
+                    ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/30"
                     : "text-[#A89F91]"
                 }`}
               >
@@ -420,11 +499,39 @@ export default function PartnerDashboardPage() {
 
               <button
                 type="button"
+                onClick={() => {
+                  setCurrentTab("qr");
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
+                  currentTab === "qr"
+                    ? "bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/30"
+                    : "text-[#A89F91]"
+                }`}
+              >
+                <QrCode size={16} />
+                <span>QR Code & Referral Link</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsPasswordModalOpen(true);
+                }}
+                className="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#A89F91]"
+              >
+                <KeyRound size={16} />
+                <span>Change Password</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={logout}
                 className="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/30"
               >
                 <LogOut size={16} />
-                <span>Logout</span>
+                <span>Logout Session</span>
               </button>
             </nav>
           </div>
@@ -438,145 +545,205 @@ export default function PartnerDashboardPage() {
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#26211C]">
           <div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2.5">
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#FAF7F2]">
-                Welcome, {partnerProfile?.shopName || "Partner"}
+                Welcome, {shopName}
               </h1>
-              <span className="hidden sm:inline-flex items-center space-x-1 text-[11px] font-bold text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 px-2.5 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                <span>Active Account</span>
+              <span className="hidden sm:inline-flex items-center space-x-1.5 text-[11px] font-bold text-[#39FF14] bg-[#39FF14]/10 border border-[#39FF14]/30 px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(57,255,20,0.15)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-pulse"></span>
+                <span>Active Partner</span>
               </span>
             </div>
             <p className="text-xs text-[#A89F91] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>
                 Partner ID:{" "}
-                <strong className="text-[#D4AF37] font-mono">
-                  {partnerProfile?.partnerId || partnerProfile?.id || "SHOP001"}
-                </strong>
+                <strong className="text-[#39FF14] font-mono">{partnerCode}</strong>
               </span>
               <span>•</span>
               <span>
                 Username:{" "}
                 <strong className="text-[#FAF7F2]">
-                  {partnerProfile?.username || partnerProfile?.email || "—"}
+                  {partnerProfile?.username || "—"}
                 </strong>
               </span>
               <span>•</span>
-              <span className="text-[#10B981] font-semibold">Live Real-time Sync Active</span>
+              <span className="text-[#39FF14] font-semibold">
+                Live Real-Time Sync Active
+              </span>
             </p>
           </div>
 
-          <div className="flex items-center space-x-2 self-start sm:self-auto">
-            <span className="text-xs text-[#7A7165]">
-              Viewing {projects.length} wedding {projects.length === 1 ? "project" : "projects"}
-            </span>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#181512] border border-[#26211C] hover:border-[#39FF14]/50 text-xs font-semibold text-[#FAF7F2] hover:text-[#39FF14] transition-all"
+            >
+              <KeyRound size={14} />
+              <span>Settings</span>
+            </button>
+
+            <a
+              href={`https://cards.webryza.in/?ref=${partnerCode}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#39FF14]/15 border border-[#39FF14]/40 text-xs font-bold text-[#39FF14] hover:bg-[#39FF14] hover:text-[#0A0908] transition-all shadow-[0_0_12px_rgba(57,255,20,0.15)]"
+            >
+              <ExternalLink size={14} />
+              <span>Open Form Link</span>
+            </a>
           </div>
         </div>
 
         {/* Global Error Banner if any */}
         {error && (
-          <div className="p-3.5 bg-rose-950/60 border border-rose-800 rounded-xl text-rose-200 text-xs flex items-center space-x-2.5">
+          <div className="p-3.5 bg-rose-950/70 border border-rose-700 rounded-xl text-rose-200 text-xs flex items-center space-x-2.5">
             <AlertCircle size={16} className="text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* ------------------------------------------------------------------ */}
-        {/* SECTION 4: FOUR SUMMARY CARDS */}
+        {/* SECTION 5: REGISTRATION QR CODE & LINK PREVIEW WIDGET */}
         {/* ------------------------------------------------------------------ */}
-        <section aria-label="Dashboard Metrics Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Total Wedding Projects */}
-          <div className="bg-[#161310] border border-[#26211C] rounded-2xl p-5 hover:border-[#D4AF37]/50 transition-all shadow-sm group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#A89F91] uppercase tracking-wider">
-                Total Wedding Projects
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-[#211C18] text-[#D4AF37] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Heart size={18} />
-              </div>
-            </div>
-            <div className="mt-3">
-              <span className="font-serif text-3xl font-bold text-[#FAF7F2]">
-                {loading ? "…" : metrics.totalProjects}
-              </span>
-              <p className="text-[11px] text-[#7A7165] mt-1">
-                Registrations through this partner
-              </p>
-            </div>
+        <PartnerQrCard partnerCode={partnerCode} shopName={shopName} />
+
+        {/* ------------------------------------------------------------------ */}
+        {/* SECTION 3: SIX FINANCIAL SUMMARY METRICS CARDS */}
+        {/* ------------------------------------------------------------------ */}
+        <section aria-label="Financial Summary Cards" className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#A89F91] flex items-center space-x-1.5">
+              <TrendingUp size={14} className="text-[#39FF14]" />
+              <span>Financial Overview & Earnings</span>
+            </h2>
+            <span className="text-[11px] text-[#7A7165]">
+              Real-time sync from WebRyza Admin
+            </span>
           </div>
 
-          {/* Card 2: Total Amount Due to WebRyza */}
-          <div className="bg-[#161310] border border-[#26211C] rounded-2xl p-5 hover:border-[#F59E0B]/50 transition-all shadow-sm group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#A89F91] uppercase tracking-wider">
-                Total Amount Due
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-[#211C18] text-[#F59E0B] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Clock size={18} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+            {/* Card 1: Total Projects */}
+            <div className="bg-[#12100E] border border-[#26211C] rounded-2xl p-4 hover:border-[#39FF14]/40 transition-all shadow-sm group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#A89F91] uppercase tracking-wider">
+                  Total Projects
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#181512] text-[#39FF14] flex items-center justify-center">
+                  <Heart size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className="font-serif text-2xl font-bold text-[#FAF7F2]">
+                  {loading ? "…" : metrics.totalProjects}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">Wedding registrations</p>
               </div>
             </div>
-            <div className="mt-3">
-              <span className="font-serif text-3xl font-bold text-[#F59E0B]">
-                {loading ? "…" : formatINR(metrics.totalDue)}
-              </span>
-              <p className="text-[11px] text-[#7A7165] mt-1">
-                Outstanding balance across projects
-              </p>
-            </div>
-          </div>
 
-          {/* Card 3: Total Amount Paid */}
-          <div className="bg-[#161310] border border-[#26211C] rounded-2xl p-5 hover:border-[#10B981]/50 transition-all shadow-sm group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#A89F91] uppercase tracking-wider">
-                Total Amount Paid
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-[#211C18] text-[#10B981] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <IndianRupee size={18} />
+            {/* Card 2: Total Amount Charged */}
+            <div className="bg-[#12100E] border border-[#26211C] rounded-2xl p-4 hover:border-[#39FF14]/40 transition-all shadow-sm group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#A89F91] uppercase tracking-wider">
+                  Total Charged
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#181512] text-[#39FF14] flex items-center justify-center">
+                  <IndianRupee size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className="font-serif text-2xl font-bold text-[#FAF7F2]">
+                  {loading ? "…" : formatINR(metrics.totalAmountCharged)}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">Total customer price</p>
               </div>
             </div>
-            <div className="mt-3">
-              <span className="font-serif text-3xl font-bold text-[#10B981]">
-                {loading ? "…" : formatINR(metrics.totalPaid)}
-              </span>
-              <p className="text-[11px] text-[#7A7165] mt-1">
-                Payments recorded by WebRyza
-              </p>
-            </div>
-          </div>
 
-          {/* Card 4: Pending Payments */}
-          <div className="bg-[#161310] border border-[#26211C] rounded-2xl p-5 hover:border-amber-500/50 transition-all shadow-sm group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#A89F91] uppercase tracking-wider">
-                Pending Payments
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-[#211C18] text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <AlertCircle size={18} />
+            {/* Card 3: WebRyza Share */}
+            <div className="bg-[#12100E] border border-[#26211C] rounded-2xl p-4 hover:border-amber-500/40 transition-all shadow-sm group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#A89F91] uppercase tracking-wider">
+                  WebRyza Share
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#181512] text-amber-400 flex items-center justify-center">
+                  <Building2 size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className="font-serif text-2xl font-bold text-amber-400">
+                  {loading ? "…" : formatINR(metrics.totalWebRyzaShare)}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">WebRyza fee across cards</p>
               </div>
             </div>
-            <div className="mt-3">
-              <span className="font-serif text-3xl font-bold text-amber-400">
-                {loading ? "…" : metrics.pendingCount}
-              </span>
-              <p className="text-[11px] text-[#7A7165] mt-1">
-                Projects pending full settlement
-              </p>
+
+            {/* Card 4: Amount Paid to WebRyza */}
+            <div className="bg-[#12100E] border border-[#26211C] rounded-2xl p-4 hover:border-[#39FF14]/40 transition-all shadow-sm group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#A89F91] uppercase tracking-wider">
+                  Amount Paid
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#181512] text-[#39FF14] flex items-center justify-center">
+                  <CreditCard size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className="font-serif text-2xl font-bold text-[#39FF14]">
+                  {loading ? "…" : formatINR(metrics.totalAmountPaid)}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">Recorded payments</p>
+              </div>
+            </div>
+
+            {/* Card 5: Remaining Balance Due */}
+            <div className="bg-[#12100E] border border-[#26211C] rounded-2xl p-4 hover:border-rose-500/40 transition-all shadow-sm group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[#A89F91] uppercase tracking-wider">
+                  Remaining Due
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#181512] text-rose-400 flex items-center justify-center">
+                  <Clock size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className={`font-serif text-2xl font-bold ${metrics.remainingBalanceDue > 0 ? "text-rose-400" : "text-[#7A7165]"}`}>
+                  {loading ? "…" : formatINR(metrics.remainingBalanceDue)}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">Balance due to WebRyza</p>
+              </div>
+            </div>
+
+            {/* Card 6: Partner Earnings */}
+            <div className="bg-[#12100E] border border-[#39FF14]/30 rounded-2xl p-4 shadow-[0_0_15px_rgba(57,255,20,0.1)] group">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#39FF14] uppercase tracking-wider">
+                  Partner Earnings
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-[#39FF14]/15 text-[#39FF14] flex items-center justify-center">
+                  <Sparkles size={16} />
+                </div>
+              </div>
+              <div className="mt-2.5">
+                <span className="font-serif text-2xl font-bold text-[#39FF14]">
+                  {loading ? "…" : formatINR(metrics.partnerEarnings)}
+                </span>
+                <p className="text-[10px] text-[#7A7165] mt-0.5">Your total commission</p>
+              </div>
             </div>
           </div>
         </section>
 
         {/* ------------------------------------------------------------------ */}
-        {/* SECTION 5: WEDDING PROJECTS TABLE */}
+        {/* WEDDING PROJECTS TABLE SECTION */}
         {/* ------------------------------------------------------------------ */}
-        <section className="bg-[#161310] border border-[#26211C] rounded-3xl p-5 sm:p-6 space-y-5">
+        <section className="bg-[#12100E] border border-[#26211C] rounded-3xl p-5 sm:p-6 space-y-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#FAF7F2]">
                 My Wedding Projects
               </h2>
               <p className="text-xs text-[#A89F91]">
-                Real-time records maintained by WebRyza Admin (Read-Only)
+                Real-time records for {shopName} (Read-Only)
               </p>
             </div>
 
@@ -584,50 +751,47 @@ export default function PartnerDashboardPage() {
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <button
                 type="button"
-                onClick={() => setStatusFilter("all")}
+                onClick={() => setPaymentStatusFilter("all")}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  statusFilter === "all"
-                    ? "bg-[#D4AF37] text-[#141210]"
-                    : "bg-[#211C18] text-[#A89F91] hover:text-[#FAF7F2]"
+                  paymentStatusFilter === "all"
+                    ? "bg-[#39FF14] text-[#0A0908] font-bold"
+                    : "bg-[#181512] text-[#A89F91] hover:text-[#FAF7F2]"
                 }`}
               >
                 All ({projects.length})
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("paid")}
+                onClick={() => setPaymentStatusFilter("paid")}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  statusFilter === "paid"
-                    ? "bg-[#10B981] text-white"
-                    : "bg-[#211C18] text-[#10B981] hover:bg-[#10B981]/20"
+                  paymentStatusFilter === "paid"
+                    ? "bg-[#39FF14] text-[#0A0908] font-bold"
+                    : "bg-[#181512] text-[#39FF14] hover:bg-[#39FF14]/20"
                 }`}
               >
-                Paid (
-                {projects.filter((p) => p.computedStatus === "Paid").length})
+                Paid ({projects.filter((p) => p.computedPaymentStatus === "Paid").length})
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("partial")}
+                onClick={() => setPaymentStatusFilter("partial")}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  statusFilter === "partial"
-                    ? "bg-sky-500 text-white"
-                    : "bg-[#211C18] text-sky-400 hover:bg-sky-500/20"
+                  paymentStatusFilter === "partial"
+                    ? "bg-sky-500 text-white font-bold"
+                    : "bg-[#181512] text-sky-400 hover:bg-sky-500/20"
                 }`}
               >
-                Partial (
-                {projects.filter((p) => p.computedStatus === "Partial").length})
+                Partial ({projects.filter((p) => p.computedPaymentStatus === "Partial").length})
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("pending")}
+                onClick={() => setPaymentStatusFilter("pending")}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  statusFilter === "pending"
-                    ? "bg-amber-500 text-white"
-                    : "bg-[#211C18] text-amber-400 hover:bg-amber-500/20"
+                  paymentStatusFilter === "pending"
+                    ? "bg-amber-500 text-white font-bold"
+                    : "bg-[#181512] text-amber-400 hover:bg-amber-500/20"
                 }`}
               >
-                Pending (
-                {projects.filter((p) => p.computedStatus === "Pending").length})
+                Pending ({projects.filter((p) => p.computedPaymentStatus === "Pending").length})
               </button>
             </div>
           </div>
@@ -641,46 +805,48 @@ export default function PartnerDashboardPage() {
               </div>
               <input
                 type="text"
-                placeholder="Search by bride, groom name..."
+                placeholder="Search by bride, groom, phone..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-3 py-2 bg-[#0F0D0B] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] placeholder-[#665C51] focus:outline-none focus:border-[#D4AF37]"
+                className="w-full pl-9 pr-3 py-2 bg-[#0A0908] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] placeholder-[#665C51] focus:outline-none focus:border-[#39FF14]"
               />
             </div>
 
-            {/* Status Filter */}
+            {/* Payment Status Filter */}
             <div className="relative">
               <select
-                value={statusFilter}
+                value={paymentStatusFilter}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value);
+                  setPaymentStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 bg-[#0F0D0B] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#D4AF37]"
+                className="w-full px-3 py-2 bg-[#0A0908] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#39FF14]"
               >
-                <option value="all">Payment Status: All</option>
+                <option value="all">Payment: All Statuses</option>
                 <option value="pending">Pending</option>
                 <option value="partial">Partial</option>
                 <option value="paid">Paid</option>
               </select>
             </div>
 
-            {/* Wedding Date Filter */}
+            {/* Project Status Filter */}
             <div className="relative">
               <select
-                value={dateFilter}
+                value={projectStatusFilter}
                 onChange={(e) => {
-                  setDateFilter(e.target.value);
+                  setProjectStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 bg-[#0F0D0B] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#D4AF37]"
+                className="w-full px-3 py-2 bg-[#0A0908] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#39FF14]"
               >
-                <option value="all">Date: All Dates</option>
-                <option value="upcoming">Upcoming Weddings</option>
-                <option value="past">Past Weddings</option>
+                <option value="all">Project: All Statuses</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="building">Building</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
@@ -692,7 +858,7 @@ export default function PartnerDashboardPage() {
                   setSortOption(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 bg-[#0F0D0B] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#D4AF37]"
+                className="w-full px-3 py-2 bg-[#0A0908] border border-[#26211C] rounded-xl text-xs text-[#FAF7F2] focus:outline-none focus:border-[#39FF14]"
               >
                 <option value="newest">Sort: Newest Registrations</option>
                 <option value="oldest">Sort: Oldest Registrations</option>
@@ -701,43 +867,44 @@ export default function PartnerDashboardPage() {
             </div>
           </div>
 
-          {/* Projects Table Responsive Container */}
+          {/* Projects Table Responsive Container (Exact 9 Columns!) */}
           <div className="overflow-x-auto rounded-2xl border border-[#26211C]">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#1A1714] text-[#A89F91] border-b border-[#26211C] uppercase tracking-wider text-[10px]">
-                  <th className="py-3.5 px-4 font-semibold">Couple</th>
-                  <th className="py-3.5 px-4 font-semibold">Wedding Date</th>
-                  <th className="py-3.5 px-4 font-semibold">Website</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Total Charged</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">WebRyza Amount</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Paid</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Remaining</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">Status</th>
+                <tr className="bg-[#181512] text-[#A89F91] border-b border-[#26211C] uppercase tracking-wider text-[10px]">
+                  <th className="py-3.5 px-4 font-semibold">1. Couple</th>
+                  <th className="py-3.5 px-4 font-semibold">2. Wedding Date</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">3. Total Charged</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">4. WebRyza Share</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">5. Amount Paid</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">6. Remaining</th>
+                  <th className="py-3.5 px-4 font-semibold text-center">7. Payment Status</th>
+                  <th className="py-3.5 px-4 font-semibold text-center">8. Project Status</th>
+                  <th className="py-3.5 px-4 font-semibold text-center">9. Website Link</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#26211C]">
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="py-12 text-center text-[#7A7165]">
+                    <td colSpan="9" className="py-12 text-center text-[#7A7165]">
                       <div className="flex flex-col items-center justify-center space-y-2">
-                        <RefreshCw size={20} className="animate-spin text-[#D4AF37]" />
+                        <RefreshCw size={20} className="animate-spin text-[#39FF14]" />
                         <span>Loading real-time projects from Firestore...</span>
                       </div>
                     </td>
                   </tr>
                 ) : paginatedProjects.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="py-12 text-center text-[#7A7165]">
+                    <td colSpan="9" className="py-12 text-center text-[#7A7165]">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <FolderOpen size={24} className="text-[#3D352E]" />
                         <span className="font-semibold text-sm text-[#FAF7F2]">
                           No wedding projects found
                         </span>
                         <p className="text-xs text-[#665C51] max-w-sm">
-                          {searchQuery || statusFilter !== "all" || dateFilter !== "all"
+                          {searchQuery || paymentStatusFilter !== "all" || projectStatusFilter !== "all"
                             ? "Try adjusting your search or filters to see more results."
-                            : `When customers scan your QR code (ref=${partnerProfile?.partnerId}) and register, their projects will appear here automatically.`}
+                            : `When customers scan your QR code (ref=${partnerCode}) and register, their wedding projects will appear here in real-time.`}
                         </p>
                       </div>
                     </td>
@@ -750,10 +917,10 @@ export default function PartnerDashboardPage() {
                     return (
                       <tr
                         key={p.id}
-                        className="hover:bg-[#1A1714]/60 transition-colors group"
+                        className="hover:bg-[#181512]/60 transition-colors group"
                       >
-                        {/* 1. Couple */}
-                        <td className="py-3 px-4 font-medium">
+                        {/* 1. Couple Name */}
+                        <td className="py-3.5 px-4 font-medium">
                           <div className="flex items-center space-x-1.5 text-sm text-[#FAF7F2]">
                             <span className="font-semibold">{p.groomName}</span>
                             <span className="text-rose-400">❤️</span>
@@ -767,92 +934,118 @@ export default function PartnerDashboardPage() {
                         </td>
 
                         {/* 2. Wedding Date */}
-                        <td className="py-3 px-4 text-[#D8CDBF] whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-[#D8CDBF] whitespace-nowrap">
                           <div className="flex items-center space-x-1.5">
-                            <Calendar size={12} className="text-[#93611D]" />
+                            <Calendar size={12} className="text-[#39FF14]" />
                             <span>{p.formattedWeddingDate}</span>
                           </div>
                         </td>
 
-                        {/* 3. Website Link */}
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          {hasWebsite ? (
-                            <div className="flex items-center space-x-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyLink(p.id, p.websiteUrl)}
-                                className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                                  isCopied
-                                    ? "bg-emerald-950/80 border-emerald-500 text-emerald-300"
-                                    : "bg-[#211C18] border-[#3D352E] text-[#D8CDBF] hover:border-[#D4AF37] hover:text-[#FAF7F2]"
-                                }`}
-                                title="Copy Website Link"
-                              >
-                                {isCopied ? <Check size={12} /> : <Copy size={12} />}
-                                <span>{isCopied ? "Copied!" : "Copy Link"}</span>
-                              </button>
-
-                              <a
-                                href={p.websiteUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1 rounded-lg bg-[#211C18] text-[#A89F91] hover:text-[#D4AF37] hover:bg-[#2B241F] transition-colors"
-                                title="Open Website in new tab"
-                              >
-                                <ExternalLink size={13} />
-                              </a>
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#211C18] text-[#7A7165] border border-[#2D261E]">
-                              Website Under Development
-                            </span>
-                          )}
+                        {/* 3. Total Charged */}
+                        <td className="py-3.5 px-4 text-right font-semibold text-[#FAF7F2] whitespace-nowrap">
+                          {formatINR(p.totalCharged)}
                         </td>
 
-                        {/* 4. Total Charged */}
-                        <td className="py-3 px-4 text-right font-semibold text-[#FAF7F2] whitespace-nowrap">
-                          {formatINR(p.amountCharged)}
-                        </td>
-
-                        {/* 5. WebRyza Amount */}
-                        <td className="py-3 px-4 text-right font-medium text-[#D8CDBF] whitespace-nowrap">
+                        {/* 4. WebRyza Share */}
+                        <td className="py-3.5 px-4 text-right font-medium text-amber-400 whitespace-nowrap">
                           {formatINR(p.webryzaAmount)}
                         </td>
 
-                        {/* 6. Amount Paid */}
-                        <td className="py-3 px-4 text-right font-medium text-[#10B981] whitespace-nowrap">
+                        {/* 5. Amount Paid */}
+                        <td className="py-3.5 px-4 text-right font-medium text-[#39FF14] whitespace-nowrap">
                           {formatINR(p.amountPaid)}
                         </td>
 
-                        {/* 7. Remaining */}
-                        <td className="py-3 px-4 text-right font-semibold whitespace-nowrap">
+                        {/* 6. Remaining */}
+                        <td className="py-3.5 px-4 text-right font-semibold whitespace-nowrap">
                           <span
                             className={
-                              p.remainingAmount > 0 ? "text-[#F59E0B]" : "text-[#7A7165]"
+                              p.remainingAmount > 0 ? "text-rose-400" : "text-[#7A7165]"
                             }
                           >
                             {formatINR(p.remainingAmount)}
                           </span>
                         </td>
 
-                        {/* 8. Status Badge */}
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          {p.computedStatus === "Paid" && (
-                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981]">
+                        {/* 7. Payment Status Badge */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {p.computedPaymentStatus === "Paid" && (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#39FF14]/15 border border-[#39FF14]/40 text-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.15)]">
                               <CheckCircle2 size={11} />
                               <span>Paid</span>
                             </span>
                           )}
-                          {p.computedStatus === "Partial" && (
+                          {p.computedPaymentStatus === "Partial" && (
                             <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/15 border border-sky-500/30 text-sky-400">
                               <Clock size={11} />
                               <span>Partial</span>
                             </span>
                           )}
-                          {p.computedStatus === "Pending" && (
+                          {p.computedPaymentStatus === "Pending" && (
                             <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400">
                               <AlertCircle size={11} />
                               <span>Pending</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 8. Project Status Badge */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {p.computedProjectStatus.toLowerCase() === "completed" && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 border border-emerald-500 text-emerald-300">
+                              Completed
+                            </span>
+                          )}
+                          {p.computedProjectStatus.toLowerCase() === "building" && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-950/80 border border-cyan-500 text-cyan-300">
+                              Building
+                            </span>
+                          )}
+                          {p.computedProjectStatus.toLowerCase() === "cancelled" && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-500 text-rose-300">
+                              Cancelled
+                            </span>
+                          )}
+                          {p.computedProjectStatus.toLowerCase() !== "completed" &&
+                            p.computedProjectStatus.toLowerCase() !== "building" &&
+                            p.computedProjectStatus.toLowerCase() !== "cancelled" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-950/80 border border-purple-500 text-purple-300">
+                                Confirmed
+                              </span>
+                            )}
+                        </td>
+
+                        {/* 9. Website Link */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {hasWebsite ? (
+                            <div className="inline-flex items-center space-x-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyLink(p.id, p.websiteUrl)}
+                                className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                  isCopied
+                                    ? "bg-emerald-950/90 border-[#39FF14] text-[#39FF14]"
+                                    : "bg-[#181512] border-[#26211C] text-[#D8CDBF] hover:border-[#39FF14] hover:text-[#39FF14]"
+                                }`}
+                                title="Copy Website Link"
+                              >
+                                {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                                <span>{isCopied ? "Copied" : "Copy"}</span>
+                              </button>
+
+                              <a
+                                href={p.websiteUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1 rounded-lg bg-[#181512] border border-[#26211C] text-[#A89F91] hover:text-[#39FF14] hover:border-[#39FF14]/50 transition-colors"
+                                title="Open Live Website in new tab"
+                              >
+                                <ExternalLink size={13} />
+                              </a>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#181512] text-[#7A7165] border border-[#26211C]">
+                              Under Development
                             </span>
                           )}
                         </td>
@@ -878,7 +1071,7 @@ export default function PartnerDashboardPage() {
                   type="button"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-[#26211C] bg-[#0F0D0B] text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1C1814] transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-[#26211C] bg-[#0A0908] text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#181512] transition-colors"
                 >
                   Previous
                 </button>
@@ -890,8 +1083,8 @@ export default function PartnerDashboardPage() {
                     onClick={() => handlePageChange(pageNum)}
                     className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
                       currentPage === pageNum
-                        ? "bg-[#D4AF37] text-[#141210] font-bold"
-                        : "bg-[#0F0D0B] border border-[#26211C] text-[#A89F91] hover:text-[#FAF7F2]"
+                        ? "bg-[#39FF14] text-[#0A0908] font-bold shadow-[0_0_8px_rgba(57,255,20,0.4)]"
+                        : "bg-[#0A0908] border border-[#26211C] text-[#A89F91] hover:text-[#FAF7F2]"
                     }`}
                   >
                     {pageNum}
@@ -902,7 +1095,7 @@ export default function PartnerDashboardPage() {
                   type="button"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-[#26211C] bg-[#0F0D0B] text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1C1814] transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-[#26211C] bg-[#0A0908] text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#181512] transition-colors"
                 >
                   Next
                 </button>
@@ -912,18 +1105,24 @@ export default function PartnerDashboardPage() {
         </section>
 
         {/* Read-Only Notice Footer */}
-        <div className="p-4 rounded-2xl bg-[#141210] border border-[#26211C] flex items-center justify-between text-xs text-[#7A7165]">
+        <div className="p-4 rounded-2xl bg-[#12100E] border border-[#26211C] flex items-center justify-between text-xs text-[#7A7165]">
           <div className="flex items-center space-x-2">
-            <ShieldCheck size={16} className="text-[#10B981]" />
+            <ShieldCheck size={16} className="text-[#39FF14]" />
             <span>
-              Secure Read-Only Partner Portal. All financial and website data is verified and synchronized by WebRyza Admin.
+              Secure Read-Only Partner Admin Panel. Financial figures, payment status, and wedding websites are managed by WebRyza Admin.
             </span>
           </div>
-          <span className="hidden sm:inline text-[11px] text-[#D4AF37] font-mono">
-            {partnerProfile?.shopName} ({partnerProfile?.partnerId})
+          <span className="hidden sm:inline text-[11px] text-[#39FF14] font-mono">
+            {shopName} ({partnerCode})
           </span>
         </div>
       </main>
+
+      {/* Change Password Self-Service Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 }
