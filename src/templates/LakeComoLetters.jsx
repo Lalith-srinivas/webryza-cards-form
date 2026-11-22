@@ -825,13 +825,27 @@ export default function LakeComoLetters({ data = {} }) {
               <p className="lcl-section-intro">The photographs and quiet moments that brought us here.</p>
             </div>
 
-            <div className="lcl-gallery-masonry-grid">
+            <div
+              className={
+                galleryImages.length === 1
+                  ? "max-w-md mx-auto"
+                  : galleryImages.length === 2
+                  ? "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-6"
+                  : galleryImages.length === 3
+                  ? "grid grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto gap-6"
+                  : galleryImages.length === 4
+                  ? "grid grid-cols-2 sm:grid-cols-4 max-w-5xl mx-auto gap-4 sm:gap-6"
+                  : "lcl-gallery-masonry-grid"
+              }
+            >
               {galleryImages.map((imgSrc, idx) => {
-                const isFeatured = idx === 0 || idx === 3;
+                const isFeatured = galleryImages.length >= 5 && (idx === 0 || idx === 3);
                 return (
                   <div
                     key={idx}
-                    className={`lcl-gallery-card ${isFeatured ? "lcl-gallery-card-featured" : ""} lcl-reveal lcl-reveal-up lcl-delay-${(idx % 4) + 1}`}
+                    className={`lcl-gallery-card ${isFeatured ? "lcl-gallery-card-featured" : ""} ${
+                      galleryImages.length === 1 ? "aspect-[4/5] sm:aspect-square" : ""
+                    } lcl-reveal lcl-reveal-up lcl-delay-${(idx % 4) + 1}`}
                     onClick={() => setActivePhotoIndex(idx)}
                     role="button"
                     tabIndex={0}

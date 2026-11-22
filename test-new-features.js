@@ -99,7 +99,10 @@ assert(!validateImageFile({ type: "image/jpeg", size: 12 * 1024 * 1024 }).valid,
 // -----------------------------------------------------------------------------
 console.log("\nFeature 2: Firestore Photo Mapping & Template Compatibility");
 
-const firestoreDocWithPhotos = {
+import { validateTemplatePhotos } from "./src/utils/validation.js";
+
+// Template 2: Temple Heritage (Couple photo only, no bride, groom, or gallery)
+const templeDocWithPhotos = {
   weddingId: "WR-5500",
   templateId: "temple-heritage",
   brideName: "Priya",
@@ -116,13 +119,49 @@ const firestoreDocWithPhotos = {
   events: [],
 };
 
-const mappedWithPhotos = mapFirestoreToTemplateData(firestoreDocWithPhotos, "WR-5500");
-assert(mappedWithPhotos.bridePhotoUrl === firestoreDocWithPhotos.bridePhotoUrl, "bridePhotoUrl preserved");
-assert(mappedWithPhotos.groomPhotoUrl === firestoreDocWithPhotos.groomPhotoUrl, "groomPhotoUrl preserved");
-assert(mappedWithPhotos.couplePhotoUrl === firestoreDocWithPhotos.couplePhotoUrl, "couplePhotoUrl preserved");
-assert(mappedWithPhotos.brideImage === firestoreDocWithPhotos.bridePhotoUrl, "bridePhotoUrl mapped to template brideImage");
-assert(mappedWithPhotos.groomImage === firestoreDocWithPhotos.groomPhotoUrl, "groomPhotoUrl mapped to template groomImage");
-assert(mappedWithPhotos.coupleImage === firestoreDocWithPhotos.couplePhotoUrl, "couplePhotoUrl mapped to template coupleImage");
+const mappedTemple = mapFirestoreToTemplateData(templeDocWithPhotos, "WR-5500");
+assert(mappedTemple.coupleImage === templeDocWithPhotos.couplePhotoUrl, "temple-heritage maps couplePhotoUrl to coupleImage");
+assert(mappedTemple.brideImage === "", "temple-heritage excludes brideImage according to template rules");
+assert(mappedTemple.groomImage === "", "temple-heritage excludes groomImage according to template rules");
+assert(mappedTemple.galleryImages.length === 0, "temple-heritage excludes galleryImages according to template rules");
+
+// Template 3: Elegant Pastel Romance (Couple hero, bride, groom, and gallery)
+const pastelDocWithPhotos = {
+  weddingId: "WR-5501",
+  templateId: "elegant-pastel-romance",
+  brideName: "Priya",
+  groomName: "Rahul",
+  couplePhotoUrl: "https://res.cloudinary.com/webryza/image/upload/v1/webryza/weddings/couple.jpg",
+  bridePhotoUrl: "https://res.cloudinary.com/webryza/image/upload/v1/webryza/weddings/bride.jpg",
+  groomPhotoUrl: "https://res.cloudinary.com/webryza/image/upload/v1/webryza/weddings/groom.jpg",
+  galleryImages: ["https://res.cloudinary.com/webryza/image/upload/v1/webryza/weddings/g1.jpg"],
+};
+
+const mappedPastel = mapFirestoreToTemplateData(pastelDocWithPhotos, "WR-5501");
+assert(mappedPastel.coupleImage === pastelDocWithPhotos.couplePhotoUrl, "elegant-pastel maps couplePhotoUrl to coupleImage");
+assert(mappedPastel.brideImage === pastelDocWithPhotos.bridePhotoUrl, "elegant-pastel maps bridePhotoUrl to brideImage");
+assert(mappedPastel.groomImage === pastelDocWithPhotos.groomPhotoUrl, "elegant-pastel maps groomPhotoUrl to groomImage");
+assert(mappedPastel.galleryImages.length === 1, "elegant-pastel maps galleryImages");
+
+// Template 1 & 4: Royal Gold & Lake Como (Gallery only)
+const royalDoc = {
+  weddingId: "WR-5502",
+  templateId: "royal-gold",
+  couplePhotoUrl: "https://example.com/couple.jpg",
+  galleryImages: ["https://example.com/g1.jpg", "https://example.com/g2.jpg"],
+};
+const mappedRoyal = mapFirestoreToTemplateData(royalDoc, "WR-5502");
+assert(mappedRoyal.coupleImage === "", "royal-gold excludes coupleImage");
+assert(mappedRoyal.galleryImages.length === 2, "royal-gold maps galleryImages");
+
+// Validation tests
+assert(Object.keys(validateTemplatePhotos({ templateId: "temple-heritage", couplePhotoUrl: "url" })).length === 0, "Temple Heritage valid with couple photo");
+assert(validateTemplatePhotos({ templateId: "temple-heritage", couplePhotoUrl: "" }).couplePhotoUrl !== undefined, "Temple Heritage requires couple photo");
+assert(Object.keys(validateTemplatePhotos({ templateId: "royal-gold", galleryImages: ["g1"] })).length === 0, "Royal Gold valid with 1 gallery photo");
+assert(validateTemplatePhotos({ templateId: "royal-gold", galleryImages: [] }).galleryImages !== undefined, "Royal Gold requires at least 1 gallery photo");
+assert(validateTemplatePhotos({ templateId: "royal-gold", galleryImages: [1,2,3,4,5,6,7] }).galleryImages !== undefined, "Royal Gold rejects >6 gallery photos");
+assert(Object.keys(validateTemplatePhotos({ templateId: "lakecomo-letters", galleryImages: ["g1", "g2"] })).length === 0, "Lake Como valid with gallery photos");
+assert(validateTemplatePhotos({ templateId: "lakecomo-letters", galleryImages: [1,2,3,4,5,6,7,8] }).galleryImages !== undefined, "Lake Como rejects >7 gallery photos");
 
 // Backward compatibility: existing records without photos
 const legacyDocWithoutPhotos = {

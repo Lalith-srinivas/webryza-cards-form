@@ -76,6 +76,21 @@ export async function submitRegistration(formData, partnerInfo) {
   // Selected template (default to royal-gold)
   const templateId = formData.templateId || "royal-gold";
 
+  // Normalize image data structures (supports images object and legacy flat fields)
+  const couplePhoto = (formData.images?.couple || formData.couplePhotoUrl || "").trim();
+  const bridePhoto = (formData.images?.bride || formData.bridePhotoUrl || "").trim();
+  const groomPhoto = (formData.images?.groom || formData.groomPhotoUrl || "").trim();
+  const galleryList = Array.isArray(formData.images?.gallery) && formData.images.gallery.length > 0
+    ? formData.images.gallery
+    : (Array.isArray(formData.galleryImages) ? formData.galleryImages : []);
+
+  const structuredImages = {
+    couple: couplePhoto,
+    bride: bridePhoto,
+    groom: groomPhoto,
+    gallery: galleryList,
+  };
+
   // Allocate sequential wedding ID (e.g. 0001 or WR-XXXX)
   const weddingId = await allocateWeddingIdentifier();
 
@@ -93,9 +108,11 @@ export async function submitRegistration(formData, partnerInfo) {
     groomParents: formData.groomParents.trim(),
     phone: cleanedPhone || formData.phone.trim(),
     email: (formData.email || "").trim(),
-    bridePhotoUrl: (formData.bridePhotoUrl || "").trim(),
-    groomPhotoUrl: (formData.groomPhotoUrl || "").trim(),
-    couplePhotoUrl: (formData.couplePhotoUrl || "").trim(),
+    bridePhotoUrl: bridePhoto,
+    groomPhotoUrl: groomPhoto,
+    couplePhotoUrl: couplePhoto,
+    galleryImages: galleryList,
+    images: structuredImages,
     weddingDate: weddingTimestamp,
     weddingTime: formData.weddingTime.trim(),
     venueName: formData.venueName.trim(),
@@ -140,9 +157,11 @@ export async function submitRegistration(formData, partnerInfo) {
     additionalDetails: (formData.additionalDetails || "").trim(),
     events: formattedEvents,
     websiteUrl: websiteUrl,
-    bridePhotoUrl: (formData.bridePhotoUrl || "").trim(),
-    groomPhotoUrl: (formData.groomPhotoUrl || "").trim(),
-    couplePhotoUrl: (formData.couplePhotoUrl || "").trim(),
+    bridePhotoUrl: bridePhoto,
+    groomPhotoUrl: groomPhoto,
+    couplePhotoUrl: couplePhoto,
+    galleryImages: galleryList,
+    images: structuredImages,
     videoUrl: "",
     websiteStatus: "published",
   };

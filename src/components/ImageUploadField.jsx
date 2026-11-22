@@ -8,6 +8,7 @@ export default function ImageUploadField({
   sublabel,
   value,
   onChange,
+  error,
   photoType = "couple",
   aspectRatio = "portrait", // "portrait" | "square" | "landscape"
 }) {
@@ -185,10 +186,10 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {errorMessage && (
+      {(errorMessage || error) && (
         <div className="flex items-center space-x-1.5 text-xs text-rose-600 mt-1">
           <AlertCircle size={13} className="shrink-0" />
-          <span>{errorMessage}</span>
+          <span>{errorMessage || error}</span>
         </div>
       )}
     </div>

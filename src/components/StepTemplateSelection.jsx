@@ -270,26 +270,26 @@ export default function StepTemplateSelection() {
       {previewTemplate &&
         createPortal(
           <div className="fixed inset-0 z-[999999] w-screen h-screen bg-black/95 flex flex-col animate-fadeIn overflow-hidden">
-            {/* Full-Screen Top Control Bar - Responsive & Aligned on Mobile */}
-            <header className="bg-[#1a1108]/95 backdrop-blur-md text-white px-3 sm:px-6 py-2 sm:py-2.5 border-b border-[#D4AF37]/50 shadow-2xl z-50 shrink-0">
+            {/* Full-Screen Top Control Bar - Responsive & Perfectly Aligned on Mobile */}
+            <header className="bg-[#1a1108]/95 backdrop-blur-md text-white px-3 sm:px-6 py-2 border-b border-[#D4AF37]/50 shadow-2xl z-50 shrink-0">
               {/* Primary Top Bar Row */}
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 h-10">
                 {/* Left: Badge & Template Title */}
-                <div className="flex items-center gap-2 min-w-0 shrink">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#FDF7B8] bg-white/10 px-2 py-0.5 rounded-full border border-white/10 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#FDF7B8] bg-white/10 px-2 py-0.5 rounded-full border border-white/15 shrink-0">
                     Live Preview
                   </span>
-                  <span className="font-serif text-sm sm:text-base font-bold text-white truncate">
+                  <span className="font-serif text-sm font-semibold text-[#EEDEB3] truncate hidden xs:inline sm:text-base">
                     {previewTemplate.name}
                   </span>
                 </div>
 
-                {/* Right: Actions (Select + Close) */}
+                {/* Right: Actions (Select + Fullscreen + Close) */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                   <button
                     type="button"
                     onClick={toggleBrowserFullscreen}
-                    className="hidden md:inline-flex items-center gap-1 p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/80 hover:text-white transition-all text-xs"
+                    className="hidden md:inline-flex items-center p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/80 hover:text-white transition-all text-xs"
                     title="Toggle Fullscreen"
                   >
                     <Maximize2 size={15} />
@@ -313,13 +313,13 @@ export default function StepTemplateSelection() {
                     className="p-1.5 sm:p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-all shrink-0"
                     title="Close Preview (Esc)"
                   >
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
               </div>
 
               {/* Template Switcher Tabs Row - Clean horizontal scroll with no overlap */}
-              <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
+              <div className="mt-1 pt-1.5 border-t border-white/10 flex items-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-[#D4AF37] shrink-0 mr-1 hidden sm:inline">
                   Switch Theme:
                 </span>

@@ -6,6 +6,7 @@ import {
   validateWeddingDetails,
   validateEvent,
   validateAmount,
+  validateTemplatePhotos,
 } from "../utils/validation";
 
 const FormContext = createContext(null);
@@ -24,6 +25,13 @@ const INITIAL_FORM_STATE = {
   bridePhotoUrl: "",
   groomPhotoUrl: "",
   couplePhotoUrl: "",
+  galleryImages: [],
+  images: {
+    couple: "",
+    bride: "",
+    groom: "",
+    gallery: [],
+  },
 
   // Step 3: Wedding Details
   weddingDate: "",
@@ -87,9 +95,25 @@ export const FormProvider = ({ children }) => {
     checkPartner();
   }, []);
 
-  // Update a single form field
+  // Update a single form field and keep images structure synchronized
   const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Keep images object synchronized
+      if (field === "couplePhotoUrl") {
+        updated.images = { ...(prev.images || {}), couple: value };
+      } else if (field === "bridePhotoUrl") {
+        updated.images = { ...(prev.images || {}), bride: value };
+      } else if (field === "groomPhotoUrl") {
+        updated.images = { ...(prev.images || {}), groom: value };
+      } else if (field === "galleryImages") {
+        updated.images = { ...(prev.images || {}), gallery: value };
+      }
+
+      return updated;
+    });
+
     // Clear error for that field as user types
     if (errors[field]) {
       setErrors((prev) => {
@@ -131,7 +155,9 @@ export const FormProvider = ({ children }) => {
         stepErrors.templateId = "Please choose a wedding template to proceed";
       }
     } else if (stepNumber === 2) {
-      stepErrors = validateCoupleDetails(formData);
+      const coupleErrors = validateCoupleDetails(formData);
+      const photoErrors = validateTemplatePhotos(formData);
+      stepErrors = { ...coupleErrors, ...photoErrors };
     } else if (stepNumber === 3) {
       stepErrors = validateWeddingDetails(formData);
     } else if (stepNumber === 4) {
@@ -183,11 +209,13 @@ export const FormProvider = ({ children }) => {
   const submitForm = async () => {
     // Validate all steps
     const coupleErrors = validateCoupleDetails(formData);
+    const photoErrors = validateTemplatePhotos(formData);
     const weddingErrors = validateWeddingDetails(formData);
     const amountError = validateAmount(formData.amountCharged);
 
     const allErrors = {
       ...coupleErrors,
+      ...photoErrors,
       ...weddingErrors,
     };
     if (amountError) allErrors.amountCharged = amountError;

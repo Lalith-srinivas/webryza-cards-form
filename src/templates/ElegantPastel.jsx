@@ -928,11 +928,25 @@ export default function ElegantPastel({ data = {} }) {
               </div>
             </div>
 
-            <div className="ep-gallery-grid">
+            <div
+              className={
+                galleryImages.length === 1
+                  ? "max-w-md mx-auto"
+                  : galleryImages.length === 2
+                  ? "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-4 sm:gap-6"
+                  : galleryImages.length === 3
+                  ? "grid grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto gap-4 sm:gap-6"
+                  : galleryImages.length === 4
+                  ? "grid grid-cols-2 max-w-3xl mx-auto gap-4 sm:gap-6"
+                  : "ep-gallery-grid"
+              }
+            >
               {galleryImages.map((imgUrl, i) => (
                 <div
                   key={i}
-                  className="ep-gallery-item"
+                  className={`ep-gallery-item ${
+                    galleryImages.length === 1 ? "aspect-[4/5] sm:aspect-square !col-span-full" : ""
+                  }`}
                   onClick={() => setActivePhotoIndex(i)}
                   title="Click to expand"
                 >

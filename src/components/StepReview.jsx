@@ -170,29 +170,49 @@ export default function StepReview() {
             )}
           </div>
 
-          {/* Uploaded Cloudinary Photos Preview in Review Step */}
-          {(formData.bridePhotoUrl || formData.groomPhotoUrl || formData.couplePhotoUrl) && (
-            <div className="mt-3 pt-3 border-t border-[#EEDEB3]/50 flex items-center gap-3">
-              <span className="text-[11px] font-semibold text-[#8B6E32] shrink-0">Attached Photos:</span>
-              <div className="flex items-center gap-2">
-                {formData.bridePhotoUrl && (
-                  <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Bride Photo">
-                    <img src={formData.bridePhotoUrl} alt="Bride" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                {formData.groomPhotoUrl && (
-                  <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Groom Photo">
-                    <img src={formData.groomPhotoUrl} alt="Groom" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                {formData.couplePhotoUrl && (
-                  <div className="w-14 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Couple Photo">
-                    <img src={formData.couplePhotoUrl} alt="Couple" className="w-full h-full object-cover" />
-                  </div>
-                )}
+          {/* Uploaded Cloudinary Photos & Gallery Preview in Review Step */}
+          {(() => {
+            const galleryList = Array.isArray(formData.galleryImages)
+              ? formData.galleryImages
+              : (Array.isArray(formData.images?.gallery) ? formData.images.gallery : []);
+            const hasPhotos = formData.bridePhotoUrl || formData.groomPhotoUrl || formData.couplePhotoUrl || galleryList.length > 0;
+
+            if (!hasPhotos) return null;
+
+            return (
+              <div className="mt-3 pt-3 border-t border-[#EEDEB3]/50 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#8B6E32]">
+                  <span>Attached Wedding Photos:</span>
+                  {galleryList.length > 0 && (
+                    <span className="text-[#93611D]">{galleryList.length} Gallery Photos</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                  {formData.couplePhotoUrl && (
+                    <div className="w-14 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs shrink-0" title="Couple Photo">
+                      <img src={formData.couplePhotoUrl} alt="Couple" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  {formData.bridePhotoUrl && (
+                    <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs shrink-0" title="Bride Photo">
+                      <img src={formData.bridePhotoUrl} alt="Bride" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  {formData.groomPhotoUrl && (
+                    <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs shrink-0" title="Groom Photo">
+                      <img src={formData.groomPhotoUrl} alt="Groom" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  {galleryList.map((url, idx) => (
+                    <div key={idx} className="w-11 h-11 rounded-lg overflow-hidden border border-[#EEDEB3] shadow-xs shrink-0" title={`Gallery Photo ${idx + 1}`}>
+                      <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Card 2: Main Wedding Details */}

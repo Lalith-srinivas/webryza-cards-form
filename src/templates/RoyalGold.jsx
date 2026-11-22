@@ -894,12 +894,27 @@ export default function RoyalGold({ data = {} }) {
             <div className="h-0.5 w-16 bg-[#C5A059] mx-auto mt-4" />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+          {/* Dynamic Grid Layout based on uploaded image count */}
+          <div
+            className={
+              galleryImages.length === 1
+                ? "max-w-md mx-auto"
+                : galleryImages.length === 2
+                ? "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-4 sm:gap-6"
+                : galleryImages.length === 3
+                ? "grid grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto gap-4 sm:gap-6"
+                : galleryImages.length === 4
+                ? "grid grid-cols-2 max-w-3xl mx-auto gap-4 sm:gap-6"
+                : "grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6"
+            }
+          >
             {galleryImages.map((imgUrl, i) => (
               <div
                 key={i}
                 onClick={() => setActivePhotoIndex(i)}
-                className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border border-[#D4AF37]/50 shadow-md bg-[#FAF7F0]"
+                className={`group relative ${
+                  galleryImages.length === 1 ? "aspect-[4/5] sm:aspect-square" : "aspect-square"
+                } rounded-2xl overflow-hidden cursor-pointer border border-[#D4AF37]/50 shadow-md bg-[#FAF7F0]`}
               >
                 <img
                   src={imgUrl}

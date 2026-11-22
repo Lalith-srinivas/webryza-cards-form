@@ -249,15 +249,43 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     ];
   }
 
-  // Media (Cloudinary photos take precedence over static placeholders)
+  // Media extraction (supports both images object and flat fields)
   const videoUrl = (docData.videoUrl || "").trim();
-  const bridePhotoUrl = (docData.bridePhotoUrl || "").trim();
-  const groomPhotoUrl = (docData.groomPhotoUrl || "").trim();
-  const couplePhotoUrl = (docData.couplePhotoUrl || "").trim();
+  const bridePhotoUrl = (docData.images?.bride || docData.bridePhotoUrl || "").trim();
+  const groomPhotoUrl = (docData.images?.groom || docData.groomPhotoUrl || "").trim();
+  const couplePhotoUrl = (docData.images?.couple || docData.couplePhotoUrl || "").trim();
+  const rawGallery = Array.isArray(docData.images?.gallery) && docData.images.gallery.length > 0
+    ? docData.images.gallery
+    : (Array.isArray(docData.galleryImages) ? docData.galleryImages : []);
 
-  const coupleImage = couplePhotoUrl || docData.coupleImage || docData.heroImage || "";
-  const brideImage = bridePhotoUrl || docData.brideImage || "";
-  const groomImage = groomPhotoUrl || docData.groomImage || "";
+  // Template-specific image enforcement:
+  // - Royal Gold: Gallery ONLY (1-6). No bride, groom, or couple hero photo.
+  // - Temple Heritage: Couple photo ONLY (1 photo). No bride, groom, or gallery.
+  // - Elegant Pastel Romance: Couple (hero), Bride, Groom, and Gallery (1-8).
+  // - Lake Como Letters: Gallery ONLY (1-7). No bride, groom, or couple hero photo.
+  let coupleImage = "";
+  let brideImage = "";
+  let groomImage = "";
+  let galleryImages = [];
+
+  if (templateId === "temple-heritage") {
+    coupleImage = couplePhotoUrl || docData.coupleImage || docData.heroImage || "";
+    galleryImages = [];
+  } else if (templateId === "elegant-pastel-romance") {
+    coupleImage = couplePhotoUrl || docData.coupleImage || docData.heroImage || "";
+    brideImage = bridePhotoUrl || docData.brideImage || "";
+    groomImage = groomPhotoUrl || docData.groomImage || "";
+    galleryImages = rawGallery;
+  } else if (templateId === "lakecomo-letters" || templateId === "royal-gold") {
+    // Gallery-only templates
+    galleryImages = rawGallery;
+  } else {
+    // Default fallback
+    coupleImage = couplePhotoUrl || docData.coupleImage || docData.heroImage || "";
+    brideImage = bridePhotoUrl || docData.brideImage || "";
+    groomImage = groomPhotoUrl || docData.groomImage || "";
+    galleryImages = rawGallery;
+  }
 
   // Grandparents & Story (Only keep if explicitly provided; NEVER invent fake data)
   const grandparents = Array.isArray(docData.grandparents) && docData.grandparents.length > 0
@@ -328,7 +356,13 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     groomPhotoUrl,
     couplePhotoUrl,
     venueImage: docData.venueImage || "",
-    galleryImages: Array.isArray(docData.galleryImages) ? docData.galleryImages : [],
+    galleryImages,
+    images: {
+      couple: coupleImage,
+      bride: brideImage,
+      groom: groomImage,
+      gallery: galleryImages,
+    },
 
     // Optional Family & Story (Null if not provided by customer)
     grandparents,

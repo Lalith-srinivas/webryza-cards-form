@@ -1,7 +1,8 @@
 import React from "react";
 import { useFormContext } from "../context/FormContext";
-import { User, Users, Phone, Mail, Heart, Camera, Sparkles } from "lucide-react";
+import { User, Users, Phone, Mail, Heart, Camera, Sparkles, Image as ImageIcon } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
+import GalleryUploadField from "./GalleryUploadField";
 
 export default function StepCoupleDetails() {
   const { formData, updateField, errors } = useFormContext();
@@ -181,60 +182,140 @@ export default function StepCoupleDetails() {
         </div>
       </div>
 
-      {/* Cloudinary Wedding Photographs Section */}
-      <div className="pt-4 border-t border-[#EEDEB3]/50 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-full bg-[#FAF0D7] text-[#93611D] flex items-center justify-center">
-              <Camera size={15} />
+      {/* Cloudinary Wedding Photographs Section - Dynamically Configured by Template */}
+      {(() => {
+        const rawTmpl = (formData.templateId || "royal-gold").toLowerCase().trim();
+        const isTemple = rawTmpl.includes("temple") || rawTmpl.includes("vishu") || rawTmpl.includes("heritage");
+        const isPastel = rawTmpl.includes("pastel") || rawTmpl.includes("romance");
+        const isLakecomo = rawTmpl.includes("lake") || rawTmpl.includes("letters") || rawTmpl.includes("como");
+        const isRoyal = !isTemple && !isPastel && !isLakecomo;
+
+        const galleryImages = Array.isArray(formData.galleryImages)
+          ? formData.galleryImages
+          : (Array.isArray(formData.images?.gallery) ? formData.images.gallery : []);
+
+        return (
+          <div className="pt-4 border-t border-[#EEDEB3]/50 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-full bg-[#FAF0D7] text-[#93611D] flex items-center justify-center">
+                  <Camera size={15} />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold text-[#25201A]">
+                    {isRoyal && "Royal Gold Wedding Gallery"}
+                    {isTemple && "Temple Heritage Couple Photograph"}
+                    {isPastel && "Elegant Pastel Romance Photographs & Gallery"}
+                    {isLakecomo && "Lake Como Editorial Gallery"}
+                  </h3>
+                  <p className="text-xs text-[#665C51]">
+                    {isRoyal && "Upload between 1 and 6 photographs for your royal wedding gallery grid"}
+                    {isTemple && "Upload the couple portrait featured on your traditional temple card"}
+                    {isPastel && "Upload couple cover, bride & groom portraits, plus 1 to 8 gallery photos"}
+                    {isLakecomo && "Upload between 1 and 7 photographs for your romantic editorial gallery"}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-[#8B6E32] bg-[#FCF9F0] px-2.5 py-0.5 rounded-full border border-[#EEDEB3]">
+                Cloudinary Powered
+              </span>
             </div>
-            <div>
-              <h3 className="font-serif text-base font-bold text-[#25201A]">
-                Wedding Portraits &amp; Photographs
-              </h3>
-              <p className="text-xs text-[#665C51]">
-                Upload high-res photos to feature on your digital wedding invitation website (optional)
-              </p>
-            </div>
+
+            {/* TEMPLATE 1: Royal Gold -> Gallery Only (1 to 6 images) */}
+            {isRoyal && (
+              <GalleryUploadField
+                label="Wedding Gallery Photos"
+                sublabel="1 to 6 photos (Min 1 required)"
+                images={galleryImages}
+                onChange={(urls) => updateField("galleryImages", urls)}
+                minImages={1}
+                maxImages={6}
+                error={errors.galleryImages}
+              />
+            )}
+
+            {/* TEMPLATE 2: Temple Heritage -> Exactly One Couple Photo (Required) */}
+            {isTemple && (
+              <div>
+                <ImageUploadField
+                  label="Couple Photograph"
+                  sublabel="Required portrait (1 photo)"
+                  value={formData.couplePhotoUrl}
+                  onChange={(url) => updateField("couplePhotoUrl", url)}
+                  error={errors.couplePhotoUrl}
+                  photoType="couple"
+                  aspectRatio="portrait"
+                />
+              </div>
+            )}
+
+            {/* TEMPLATE 3: Elegant Pastel Romance -> Couple (hero), Bride, Groom, & Gallery (1 to 8) */}
+            {isPastel && (
+              <div className="space-y-4">
+                {/* Couple Hero Photo */}
+                <div>
+                  <ImageUploadField
+                    label="Couple Hero Cover Photograph"
+                    sublabel="Featured at top of invitation (Required)"
+                    value={formData.couplePhotoUrl}
+                    onChange={(url) => updateField("couplePhotoUrl", url)}
+                    error={errors.couplePhotoUrl}
+                    photoType="couple"
+                    aspectRatio="landscape"
+                  />
+                </div>
+
+                {/* Bride & Groom Photos Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ImageUploadField
+                    label="Bride's Photograph"
+                    sublabel="Featured in bride section (Required)"
+                    value={formData.bridePhotoUrl}
+                    onChange={(url) => updateField("bridePhotoUrl", url)}
+                    error={errors.bridePhotoUrl}
+                    photoType="bride"
+                    aspectRatio="portrait"
+                  />
+
+                  <ImageUploadField
+                    label="Groom's Photograph"
+                    sublabel="Featured in groom section (Required)"
+                    value={formData.groomPhotoUrl}
+                    onChange={(url) => updateField("groomPhotoUrl", url)}
+                    error={errors.groomPhotoUrl}
+                    photoType="groom"
+                    aspectRatio="portrait"
+                  />
+                </div>
+
+                {/* Gallery */}
+                <GalleryUploadField
+                  label="Romance Wedding Gallery"
+                  sublabel="1 to 8 photos (Min 1 required)"
+                  images={galleryImages}
+                  onChange={(urls) => updateField("galleryImages", urls)}
+                  minImages={1}
+                  maxImages={8}
+                  error={errors.galleryImages}
+                />
+              </div>
+            )}
+
+            {/* TEMPLATE 4: Lake Como Letters -> Gallery Only (1 to 7 images) */}
+            {isLakecomo && (
+              <GalleryUploadField
+                label="Editorial Gallery Photos"
+                sublabel="1 to 7 photos (Min 1 required)"
+                images={galleryImages}
+                onChange={(urls) => updateField("galleryImages", urls)}
+                minImages={1}
+                maxImages={7}
+                error={errors.galleryImages}
+              />
+            )}
           </div>
-          <span className="text-[11px] font-semibold text-[#8B6E32] bg-[#FCF9F0] px-2.5 py-0.5 rounded-full border border-[#EEDEB3]">
-            Cloudinary Powered
-          </span>
-        </div>
-
-        {/* Bride & Groom Photos Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ImageUploadField
-            label="Bride's Portrait Photo"
-            sublabel="(optional)"
-            value={formData.bridePhotoUrl}
-            onChange={(url) => updateField("bridePhotoUrl", url)}
-            photoType="bride"
-            aspectRatio="portrait"
-          />
-
-          <ImageUploadField
-            label="Groom's Portrait Photo"
-            sublabel="(optional)"
-            value={formData.groomPhotoUrl}
-            onChange={(url) => updateField("groomPhotoUrl", url)}
-            photoType="groom"
-            aspectRatio="portrait"
-          />
-        </div>
-
-        {/* Couple Hero Photo */}
-        <div>
-          <ImageUploadField
-            label="Couple Feature / Hero Portrait"
-            sublabel="Main Cover Photo (optional)"
-            value={formData.couplePhotoUrl}
-            onChange={(url) => updateField("couplePhotoUrl", url)}
-            photoType="couple"
-            aspectRatio="landscape"
-          />
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }

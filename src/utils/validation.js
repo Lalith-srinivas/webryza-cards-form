@@ -116,3 +116,65 @@ export function validateAmount(amount) {
   }
   return null;
 }
+
+/**
+ * Template-specific photo validation according to exact business rules:
+ * - Royal Gold: 1 to 6 gallery images (mandatory: at least 1)
+ * - Temple Heritage: exactly 1 couple image (mandatory)
+ * - Elegant Pastel Romance: couple (hero), bride, groom, and 1 to 8 gallery images (all mandatory)
+ * - Lakecomo Letters: 1 to 7 gallery images (mandatory: at least 1)
+ */
+export function validateTemplatePhotos(data) {
+  const errors = {};
+  const rawTmpl = (data.templateId || "royal-gold").toLowerCase().trim();
+
+  const isTemple = rawTmpl.includes("temple") || rawTmpl.includes("vishu") || rawTmpl.includes("heritage");
+  const isPastel = rawTmpl.includes("pastel") || rawTmpl.includes("romance");
+  const isLakecomo = rawTmpl.includes("lake") || rawTmpl.includes("letters") || rawTmpl.includes("como");
+  const isRoyal = !isTemple && !isPastel && !isLakecomo;
+
+  const galleryList = Array.isArray(data.images?.gallery)
+    ? data.images.gallery
+    : Array.isArray(data.galleryImages)
+    ? data.galleryImages
+    : [];
+
+  const couplePhoto = (data.images?.couple || data.couplePhotoUrl || "").trim();
+  const bridePhoto = (data.images?.bride || data.bridePhotoUrl || "").trim();
+  const groomPhoto = (data.images?.groom || data.groomPhotoUrl || "").trim();
+
+  if (isRoyal) {
+    if (galleryList.length === 0) {
+      errors.galleryImages = "Royal Gold requires at least 1 gallery photo (up to 6 photos).";
+    } else if (galleryList.length > 6) {
+      errors.galleryImages = "Maximum 6 gallery photos allowed for Royal Gold.";
+    }
+  } else if (isTemple) {
+    if (!couplePhoto) {
+      errors.couplePhotoUrl = "Couple photograph is required for Temple Heritage.";
+    }
+  } else if (isPastel) {
+    if (!couplePhoto) {
+      errors.couplePhotoUrl = "Couple cover photograph is required for Elegant Pastel Romance.";
+    }
+    if (!bridePhoto) {
+      errors.bridePhotoUrl = "Bride's photograph is required for Elegant Pastel Romance.";
+    }
+    if (!groomPhoto) {
+      errors.groomPhotoUrl = "Groom's photograph is required for Elegant Pastel Romance.";
+    }
+    if (galleryList.length === 0) {
+      errors.galleryImages = "Elegant Pastel Romance requires at least 1 gallery photo (up to 8 photos).";
+    } else if (galleryList.length > 8) {
+      errors.galleryImages = "Maximum 8 gallery photos allowed for Elegant Pastel Romance.";
+    }
+  } else if (isLakecomo) {
+    if (galleryList.length === 0) {
+      errors.galleryImages = "Lake Como Letters requires at least 1 gallery photo (up to 7 photos).";
+    } else if (galleryList.length > 7) {
+      errors.galleryImages = "Maximum 7 gallery photos allowed for Lake Como Letters.";
+    }
+  }
+
+  return errors;
+}
