@@ -1,6 +1,7 @@
 import React from "react";
 import { useFormContext } from "../context/FormContext";
-import { User, Users, Phone, Mail, Heart } from "lucide-react";
+import { User, Users, Phone, Mail, Heart, Camera, Sparkles } from "lucide-react";
+import ImageUploadField from "./ImageUploadField";
 
 export default function StepCoupleDetails() {
   const { formData, updateField, errors } = useFormContext();
@@ -177,6 +178,61 @@ export default function StepCoupleDetails() {
           {errors.email && (
             <p className="text-xs text-rose-600 mt-1">{errors.email}</p>
           )}
+        </div>
+      </div>
+
+      {/* Cloudinary Wedding Photographs Section */}
+      <div className="pt-4 border-t border-[#EEDEB3]/50 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-full bg-[#FAF0D7] text-[#93611D] flex items-center justify-center">
+              <Camera size={15} />
+            </div>
+            <div>
+              <h3 className="font-serif text-base font-bold text-[#25201A]">
+                Wedding Portraits &amp; Photographs
+              </h3>
+              <p className="text-xs text-[#665C51]">
+                Upload high-res photos to feature on your digital wedding invitation website (optional)
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-[#8B6E32] bg-[#FCF9F0] px-2.5 py-0.5 rounded-full border border-[#EEDEB3]">
+            Cloudinary Powered
+          </span>
+        </div>
+
+        {/* Bride & Groom Photos Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ImageUploadField
+            label="Bride's Portrait Photo"
+            sublabel="(optional)"
+            value={formData.bridePhotoUrl}
+            onChange={(url) => updateField("bridePhotoUrl", url)}
+            photoType="bride"
+            aspectRatio="portrait"
+          />
+
+          <ImageUploadField
+            label="Groom's Portrait Photo"
+            sublabel="(optional)"
+            value={formData.groomPhotoUrl}
+            onChange={(url) => updateField("groomPhotoUrl", url)}
+            photoType="groom"
+            aspectRatio="portrait"
+          />
+        </div>
+
+        {/* Couple Hero Photo */}
+        <div>
+          <ImageUploadField
+            label="Couple Feature / Hero Portrait"
+            sublabel="Main Cover Photo (optional)"
+            value={formData.couplePhotoUrl}
+            onChange={(url) => updateField("couplePhotoUrl", url)}
+            photoType="couple"
+            aspectRatio="landscape"
+          />
         </div>
       </div>
     </div>

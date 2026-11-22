@@ -3,6 +3,7 @@ import { usePartnerAuth } from "../context/PartnerAuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { formatINR, formatDatePretty } from "../utils/formatters";
+import { QRCodeCanvas } from "qrcode.react";
 import PartnerQrCard from "../components/PartnerQrCard";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import {
@@ -17,6 +18,7 @@ import {
   Copy,
   ExternalLink,
   Check,
+  Download,
   LogOut,
   Menu,
   X,
@@ -57,6 +59,9 @@ export default function PartnerDashboardPage() {
 
   // Copy toast state: maps projectId -> boolean
   const [copiedId, setCopiedId] = useState(null);
+
+  // Selected project for QR modal
+  const [selectedQrProject, setSelectedQrProject] = useState(null);
 
   // Real-time Firestore Listener for this partner's projects
   useEffect(() => {
@@ -181,6 +186,55 @@ export default function PartnerDashboardPage() {
       setCopiedId(projectId);
       setTimeout(() => setCopiedId(null), 2500);
     }
+  };
+
+  // Download High-Resolution QR Code (PNG) for Wedding Card Print Shop Display
+  const handleDownloadProjectQr = (project) => {
+    if (!project || !project.websiteUrl) return;
+
+    const size = 600;
+    const padding = 50;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size + 110;
+    const ctx = canvas.getContext("2d");
+
+    // Crisp white background
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Locate the rendered QR code canvas in DOM
+    const existingQrCanvas = document.getElementById(`qr-canvas-${project.id}`);
+    if (existingQrCanvas) {
+      ctx.drawImage(existingQrCanvas, padding, padding, size - padding * 2, size - padding * 2);
+    }
+
+    // Text Header & Labels
+    ctx.fillStyle = "#1A1714";
+    ctx.font = "bold 26px serif";
+    ctx.textAlign = "center";
+    const coupleName =
+      project.groomName && project.brideName
+        ? `${project.groomName} & ${project.brideName}`
+        : "Wedding Invitation";
+    ctx.fillText(coupleName, size / 2, size + 25);
+
+    ctx.fillStyle = "#8B6E32";
+    ctx.font = "16px sans-serif";
+    const weddingCode = project.weddingId ? `#${project.weddingId}` : "";
+    ctx.fillText(`Scan with any camera to open invitation ${weddingCode}`, size / 2, size + 60);
+
+    ctx.fillStyle = "#A89F91";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("WebRyza Cards Studio • Digital Wedding Invitations", size / 2, size + 85);
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `WebRyza-QR-${project.weddingId || project.id}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // --------------------------------------------------------------------------
@@ -884,7 +938,7 @@ export default function PartnerDashboardPage() {
                   <th className="py-3.5 px-4 font-semibold text-right">6. Remaining</th>
                   <th className="py-3.5 px-4 font-semibold text-center">7. Payment Status</th>
                   <th className="py-3.5 px-4 font-semibold text-center">8. Project Status</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">9. Website Link</th>
+                  <th className="py-3.5 px-4 font-semibold text-center">9. Website Link &amp; QR</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#26211C]">
@@ -1019,33 +1073,65 @@ export default function PartnerDashboardPage() {
                             )}
                         </td>
 
-                        {/* 9. Website Link */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        {/* 9. Website Link & QR Code */}
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
                           {hasWebsite ? (
-                            <div className="inline-flex items-center space-x-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyLink(p.id, p.websiteUrl)}
-                                className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                                  isCopied
-                                    ? "bg-emerald-950/90 border-[#39FF14] text-[#39FF14]"
-                                    : "bg-[#181512] border-[#26211C] text-[#D8CDBF] hover:border-[#39FF14] hover:text-[#39FF14]"
-                                }`}
-                                title="Copy Website Link"
+                            <div className="flex items-center justify-center space-x-2.5">
+                              {/* Dynamic QR Code Thumbnail */}
+                              <div
+                                onClick={() => setSelectedQrProject(p)}
+                                className="p-1 bg-white rounded-lg shadow-sm border border-[#26211C] hover:border-[#39FF14] transition-all cursor-pointer shrink-0"
+                                title="Click to view large printable QR code"
                               >
-                                {isCopied ? <Check size={12} /> : <Copy size={12} />}
-                                <span>{isCopied ? "Copied" : "Copy"}</span>
-                              </button>
+                                <QRCodeCanvas
+                                  id={`qr-canvas-${p.id}`}
+                                  value={p.websiteUrl}
+                                  size={44}
+                                  level="H"
+                                  marginSize={1}
+                                />
+                              </div>
 
-                              <a
-                                href={p.websiteUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1 rounded-lg bg-[#181512] border border-[#26211C] text-[#A89F91] hover:text-[#39FF14] hover:border-[#39FF14]/50 transition-colors"
-                                title="Open Live Website in new tab"
-                              >
-                                <ExternalLink size={13} />
-                              </a>
+                              {/* Action Buttons: Copy Link, Download QR Code, Open Website */}
+                              <div className="flex flex-col space-y-1 text-left">
+                                <div className="flex items-center space-x-1">
+                                  {/* Copy Link */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyLink(p.id, p.websiteUrl)}
+                                    className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                      isCopied
+                                        ? "bg-emerald-950/90 border-[#39FF14] text-[#39FF14]"
+                                        : "bg-[#181512] border-[#26211C] text-[#D8CDBF] hover:border-[#39FF14] hover:text-[#39FF14]"
+                                    }`}
+                                    title="Copy Website Link"
+                                  >
+                                    {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                                    <span>{isCopied ? "Copied" : "Copy Link"}</span>
+                                  </button>
+
+                                  {/* Download QR Code */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadProjectQr(p)}
+                                    className="p-1 rounded-lg bg-[#181512] border border-[#26211C] text-[#D8CDBF] hover:text-[#39FF14] hover:border-[#39FF14]/50 transition-colors"
+                                    title="Download QR Code (PNG)"
+                                  >
+                                    <Download size={13} />
+                                  </button>
+
+                                  {/* Open Website */}
+                                  <a
+                                    href={p.websiteUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1 rounded-lg bg-[#181512] border border-[#26211C] text-[#A89F91] hover:text-[#39FF14] hover:border-[#39FF14]/50 transition-colors"
+                                    title="Open Live Website in new tab"
+                                  >
+                                    <ExternalLink size={13} />
+                                  </a>
+                                </div>
+                              </div>
                             </div>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#181512] text-[#7A7165] border border-[#26211C]">
@@ -1127,6 +1213,79 @@ export default function PartnerDashboardPage() {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
       />
+
+      {/* Wedding Invitation QR Code Modal */}
+      {selectedQrProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm bg-[#12100E] border border-[#39FF14]/40 rounded-3xl p-6 text-center shadow-2xl space-y-4">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedQrProject(null)}
+              className="absolute top-4 right-4 p-2 text-[#A89F91] hover:text-[#FAF7F2] rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="space-y-1 pt-2">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#39FF14] block">
+                Digital Wedding Invitation QR
+              </span>
+              <h3 className="font-serif text-xl font-bold text-[#FAF7F2]">
+                {selectedQrProject.groomName} &amp; {selectedQrProject.brideName}
+              </h3>
+              <p className="text-xs text-[#A89F91]">
+                Wedding ID: #{selectedQrProject.weddingId || selectedQrProject.id}
+              </p>
+            </div>
+
+            {/* High-Res QR Code Card */}
+            <div className="p-4 bg-white rounded-2xl shadow-lg border-2 border-[#39FF14]/30 inline-block">
+              <QRCodeCanvas
+                value={selectedQrProject.websiteUrl}
+                size={200}
+                level="H"
+                marginSize={2}
+              />
+            </div>
+
+            <p className="text-xs text-[#A89F91] leading-relaxed">
+              Scan with any mobile camera to immediately view this wedding invitation website.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleDownloadProjectQr(selectedQrProject)}
+                className="w-full inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#39FF14] to-[#2ecc71] hover:brightness-110 text-xs font-bold text-[#0A0908] transition-all shadow-md"
+              >
+                <Download size={14} />
+                <span>Download Printable QR (PNG)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCopyLink(selectedQrProject.id, selectedQrProject.websiteUrl)}
+                className="w-full inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-[#1A1714] border border-[#26211C] hover:border-[#39FF14]/50 text-xs font-semibold text-[#FAF7F2] transition-all"
+              >
+                {copiedId === selectedQrProject.id ? <Check size={14} className="text-[#39FF14]" /> : <Copy size={14} />}
+                <span>{copiedId === selectedQrProject.id ? "Link Copied!" : "Copy Invitation Link"}</span>
+              </button>
+
+              <a
+                href={selectedQrProject.websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center space-x-1.5 py-2 px-4 text-xs text-[#A89F91] hover:text-[#39FF14] transition-colors"
+              >
+                <span>Open Live Invitation Website</span>
+                <ExternalLink size={13} />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

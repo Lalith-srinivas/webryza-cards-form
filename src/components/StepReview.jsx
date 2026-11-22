@@ -169,6 +169,30 @@ export default function StepReview() {
               </div>
             )}
           </div>
+
+          {/* Uploaded Cloudinary Photos Preview in Review Step */}
+          {(formData.bridePhotoUrl || formData.groomPhotoUrl || formData.couplePhotoUrl) && (
+            <div className="mt-3 pt-3 border-t border-[#EEDEB3]/50 flex items-center gap-3">
+              <span className="text-[11px] font-semibold text-[#8B6E32] shrink-0">Attached Photos:</span>
+              <div className="flex items-center gap-2">
+                {formData.bridePhotoUrl && (
+                  <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Bride Photo">
+                    <img src={formData.bridePhotoUrl} alt="Bride" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                {formData.groomPhotoUrl && (
+                  <div className="w-9 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Groom Photo">
+                    <img src={formData.groomPhotoUrl} alt="Groom" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                {formData.couplePhotoUrl && (
+                  <div className="w-14 h-11 rounded-lg overflow-hidden border border-[#D4AF37]/50 shadow-xs" title="Couple Photo">
+                    <img src={formData.couplePhotoUrl} alt="Couple" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Card 2: Main Wedding Details */}

@@ -249,11 +249,15 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     ];
   }
 
-  // Media
+  // Media (Cloudinary photos take precedence over static placeholders)
   const videoUrl = (docData.videoUrl || "").trim();
-  const coupleImage = docData.coupleImage || docData.heroImage || "";
-  const brideImage = docData.brideImage || "";
-  const groomImage = docData.groomImage || "";
+  const bridePhotoUrl = (docData.bridePhotoUrl || "").trim();
+  const groomPhotoUrl = (docData.groomPhotoUrl || "").trim();
+  const couplePhotoUrl = (docData.couplePhotoUrl || "").trim();
+
+  const coupleImage = couplePhotoUrl || docData.coupleImage || docData.heroImage || "";
+  const brideImage = bridePhotoUrl || docData.brideImage || "";
+  const groomImage = groomPhotoUrl || docData.groomImage || "";
 
   // Grandparents & Story (Only keep if explicitly provided; NEVER invent fake data)
   const grandparents = Array.isArray(docData.grandparents) && docData.grandparents.length > 0
@@ -320,6 +324,9 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     coupleImage,
     brideImage,
     groomImage,
+    bridePhotoUrl,
+    groomPhotoUrl,
+    couplePhotoUrl,
     venueImage: docData.venueImage || "",
     galleryImages: Array.isArray(docData.galleryImages) ? docData.galleryImages : [],
 

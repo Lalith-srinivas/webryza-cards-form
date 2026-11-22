@@ -21,6 +21,9 @@ const INITIAL_FORM_STATE = {
   groomParents: "",
   phone: "",
   email: "",
+  bridePhotoUrl: "",
+  groomPhotoUrl: "",
+  couplePhotoUrl: "",
 
   // Step 3: Wedding Details
   weddingDate: "",
