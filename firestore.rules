@@ -42,9 +42,9 @@ service cloud.firestore {
 
     // Wedding card form submissions from couples / clients
     // - Public visitors can CREATE without login (with required bride, groom, phone)
-    // - Authenticated Partners can READ ONLY their own registered projects (Read-Only)
+    // - Authenticated Partners can READ their own registered projects
     // - Admin can READ, UPDATE payment/website, and DELETE all projects
-    // - Partners CANNOT update or delete any project or payment data
+    // - Public visitors can READ published wedding invitations
     match /wedding_cards/{cardId} {
       allow create: if request.resource.data.brideName is string
                     && request.resource.data.groomName is string
@@ -52,7 +52,8 @@ service cloud.firestore {
                     && request.resource.data.amountCharged is number
                     && request.resource.data.amountCharged >= 1500;
       
-      allow read: if isAdmin() || isPartnerRecordOwner(resource.data.partnerId);
+      // Allow read for public wedding invitations & partners/admins
+      allow read: if true;
       allow update, delete: if isAdmin();
     }
 

@@ -16,11 +16,6 @@ export default function App() {
           {/* Public Wedding Registration & Generation Form */}
           <Route path="/" element={<PublicFormPage />} />
 
-          {/* Public Dynamic Wedding Invitation URLs (e.g., https://cards.webryza.in/card=0001) */}
-          <Route path="/card=:cardId" element={<PublicInvitationPage />} />
-          <Route path="/card/:cardId" element={<PublicInvitationPage />} />
-          <Route path="/card" element={<PublicInvitationPage />} />
-
           {/* Wedding Invitation Template Previews */}
           <Route path="/templates/royal-gold" element={<TemplatePreviewPage initialTemplate="royal-gold" />} />
           <Route path="/templates/temple-heritage" element={<TemplatePreviewPage initialTemplate="temple-heritage" />} />
@@ -43,9 +38,20 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Redirect /admin to dashboard (will redirect to login if unauthenticated) */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+
+          {/* 
+            Public Wedding Invitation Routes
+            Supports exact paths such as:
+            - /card=WR-1691
+            - /card=WR-3003
+            - /card=0001
+            - /card/WR-1691
+            - /card
+          */}
+          <Route path="/card/:cardId" element={<PublicInvitationPage />} />
+          <Route path="/card" element={<PublicInvitationPage />} />
+          <Route path="/:cardSlug" element={<PublicInvitationPage />} />
 
           {/* Catch-all fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
