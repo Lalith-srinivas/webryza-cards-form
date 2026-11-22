@@ -3,6 +3,7 @@ import { FormProvider, useFormContext } from "../context/FormContext";
 import Header from "../components/Header";
 import HeroBanner from "../components/HeroBanner";
 import ProgressStepper from "../components/ProgressStepper";
+import StepTemplateSelection from "../components/StepTemplateSelection";
 import StepCoupleDetails from "../components/StepCoupleDetails";
 import StepWeddingDetails from "../components/StepWeddingDetails";
 import StepEvents from "../components/StepEvents";
@@ -10,30 +11,51 @@ import StepPackagePricing from "../components/StepPackagePricing";
 import StepReview from "../components/StepReview";
 import SuccessModal from "../components/SuccessModal";
 import PartnerLoginFloatingButton from "../components/PartnerLoginFloatingButton";
-import { ChevronLeft, ChevronRight, Sparkles, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 
 function FormContent() {
-  const { step, nextStep, prevStep, isSubmitted } = useFormContext();
+  const { step, nextStep, prevStep, isSubmitted, isSubmitting } = useFormContext();
 
   if (isSubmitted) {
     return <SuccessModal />;
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 pb-20">
+    <main className="max-w-3xl mx-auto px-4 pb-20 relative">
       <HeroBanner />
       <ProgressStepper />
 
       {/* Main Glassmorphic Form Card */}
       <div className="card-luxury rounded-3xl p-5 sm:p-8 relative">
-        {step === 1 && <StepCoupleDetails />}
-        {step === 2 && <StepWeddingDetails />}
-        {step === 3 && <StepEvents />}
-        {step === 4 && <StepPackagePricing />}
-        {step === 5 && <StepReview />}
+        {/* Step 7: Generating Overlay when form is being submitted */}
+        {isSubmitting && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-md rounded-3xl z-50 flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+            <div className="w-16 h-16 rounded-full bg-[#FAF0D7] border-2 border-[#D4AF37] flex items-center justify-center text-[#93611D] mb-4 shadow-md animate-pulse">
+              <Sparkles size={32} className="animate-spin text-[#C9972C]" />
+            </div>
+            <h3 className="font-serif text-2xl font-bold text-[#25201A]">
+              Creating Your Wedding Website...
+            </h3>
+            <p className="text-xs text-[#665C51] mt-2 max-w-sm">
+              Allocating your unique wedding ID, configuring your template, and preparing your live invitation link and QR code.
+            </p>
+            <div className="mt-6 flex items-center space-x-2 text-xs font-semibold text-[#8B6E32]">
+              <Loader2 size={16} className="animate-spin" />
+              <span>Step 7: Publishing Live Website</span>
+            </div>
+          </div>
+        )}
 
-        {/* Step Navigation Controls (Steps 1 to 4) */}
-        {step < 5 && (
+        {/* 6 Steps Form Workflow */}
+        {step === 1 && <StepTemplateSelection />}
+        {step === 2 && <StepCoupleDetails />}
+        {step === 3 && <StepWeddingDetails />}
+        {step === 4 && <StepEvents />}
+        {step === 5 && <StepPackagePricing />}
+        {step === 6 && <StepReview />}
+
+        {/* Step Navigation Controls (Steps 1 to 5) */}
+        {step < 6 && (
           <div className="mt-8 pt-5 border-t border-[#EEDEB3]/50 flex items-center justify-between">
             {step > 1 ? (
               <button
@@ -53,7 +75,13 @@ function FormContent() {
               onClick={nextStep}
               className="inline-flex items-center space-x-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all"
             >
-              <span>{step === 4 ? "Proceed to Review" : "Next Step"}</span>
+              <span>
+                {step === 1
+                  ? "Continue with Selected Template"
+                  : step === 5
+                  ? "Proceed to Review"
+                  : "Next Step"}
+              </span>
               <ChevronRight size={16} />
             </button>
           </div>

@@ -56,6 +56,20 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Public Sanitized Wedding Invitations
+    // Accessible by wedding guests without exposing private contact or payment info
+    match /public_invitations/{invitationId} {
+      allow read: if true;
+      allow create: if request.resource.data.weddingId is string
+                    && request.resource.data.brideName is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // System Counters for Atomic Sequential ID Allocations (e.g. 0001, 0002)
+    match /system_counters/{counterId} {
+      allow read, write: if true;
+    }
+
     // Partner directory (QR codes / print shop referrals)
     // - Administrators have full control
     // - Partners can read their own record

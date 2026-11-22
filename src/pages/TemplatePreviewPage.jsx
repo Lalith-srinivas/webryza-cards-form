@@ -7,7 +7,7 @@ import { sampleWeddingData } from "../templates/sampleWeddingData";
 import { sampleTempleData } from "../templates/sampleTempleData";
 import { samplePastelData } from "../templates/samplePastelData";
 import { sampleLakeComoData } from "../templates/sampleLakeComoData";
-import { ArrowLeft, Sparkles, Landmark, Flower2, Mail } from "lucide-react";
+import { ArrowLeft, Sparkles, Landmark, Flower2, Mail, Maximize2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function TemplatePreviewPage({ initialTemplate }) {
@@ -15,13 +15,14 @@ export default function TemplatePreviewPage({ initialTemplate }) {
 
   const getInitialTemplate = () => {
     if (initialTemplate) return initialTemplate;
-    if (location.pathname.includes("lake-como") || location.pathname.includes("letters")) {
+    const path = location.pathname.toLowerCase();
+    if (path.includes("lake-como") || path.includes("lakecomo") || path.includes("letters")) {
       return "lake-como-letters";
     }
-    if (location.pathname.includes("pastel") || location.pathname.includes("romance")) {
+    if (path.includes("pastel") || path.includes("romance")) {
       return "elegant-pastel";
     }
-    if (location.pathname.includes("temple") || location.pathname.includes("vishu")) {
+    if (path.includes("temple") || path.includes("vishu") || path.includes("heritage")) {
       return "temple-heritage";
     }
     return "royal-gold";
@@ -30,98 +31,120 @@ export default function TemplatePreviewPage({ initialTemplate }) {
   const [activeTemplate, setActiveTemplate] = useState(getInitialTemplate);
   const [showBanner, setShowBanner] = useState(true);
 
+  const toggleBrowserFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
   return (
-    <div className="relative min-h-screen">
-      {/* Floating Preview Banner */}
+    <div className="relative min-h-screen w-full overflow-x-hidden">
+      {/* Floating Preview Banner - Responsive on Mobile */}
       {showBanner && (
-        <div className="sticky top-0 z-50 bg-[#1a1108] text-[#FFFDF7] px-4 py-2.5 flex items-center justify-between border-b border-[#D4AF37]/50 shadow-md text-xs">
-          <div className="flex items-center gap-3 flex-wrap">
+        <header className="sticky top-0 z-50 bg-[#1a1108]/95 backdrop-blur-md text-[#FFFDF7] px-3 sm:px-6 py-2 sm:py-2.5 border-b border-[#D4AF37]/50 shadow-md text-xs">
+          {/* Top row */}
+          <div className="flex items-center justify-between gap-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#FDF7B8] font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[#FDF7B8] font-medium transition-all shrink-0"
             >
               <ArrowLeft size={13} />
               <span>Back to Form</span>
             </Link>
 
-            {/* Template Switcher Tabs */}
-            <div className="flex items-center bg-black/40 p-0.5 rounded-full border border-white/10 flex-wrap gap-1">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => setActiveTemplate("royal-gold")}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  activeTemplate === "royal-gold"
-                    ? "bg-[#D4AF37] text-[#38020E] shadow"
-                    : "text-white/70 hover:text-white"
-                }`}
+                onClick={toggleBrowserFullscreen}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                title="Toggle Fullscreen"
               >
-                <Sparkles size={12} />
-                <span>Royal Gold</span>
+                <Maximize2 size={14} />
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTemplate("temple-heritage")}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  activeTemplate === "temple-heritage"
-                    ? "bg-[#D4AF37] text-[#1b4d3e] shadow"
-                    : "text-white/70 hover:text-white"
-                }`}
+                onClick={() => setShowBanner(false)}
+                className="px-2.5 py-1 rounded text-white/70 hover:text-white"
               >
-                <Landmark size={12} />
-                <span>Temple Heritage</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTemplate("elegant-pastel")}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  activeTemplate === "elegant-pastel"
-                    ? "bg-[#F7ECE8] text-[#7D4948] shadow font-bold"
-                    : "text-white/70 hover:text-white"
-                }`}
-              >
-                <Flower2 size={12} className={activeTemplate === "elegant-pastel" ? "text-[#B47674]" : ""} />
-                <span>Elegant Pastel Romance</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTemplate("lake-como-letters")}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  activeTemplate === "lake-como-letters"
-                    ? "bg-[#3f5138] text-[#f9f7f2] shadow font-bold"
-                    : "text-white/70 hover:text-white"
-                }`}
-              >
-                <Mail size={12} className={activeTemplate === "lake-como-letters" ? "text-[#c5a46d]" : ""} />
-                <span>Lake Como Letters</span>
+                Hide
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Template Switcher Tabs Row */}
+          <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
             <button
               type="button"
-              onClick={() => setShowBanner(false)}
-              className="px-2.5 py-1 rounded text-white/70 hover:text-white"
+              onClick={() => setActiveTemplate("royal-gold")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                activeTemplate === "royal-gold"
+                  ? "bg-[#D4AF37] text-[#38020E] shadow"
+                  : "text-white/70 hover:text-white bg-white/5 hover:bg-white/10"
+              }`}
             >
-              Hide Bar
+              <Sparkles size={12} />
+              <span>Royal Gold</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTemplate("temple-heritage")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                activeTemplate === "temple-heritage"
+                  ? "bg-[#D4AF37] text-[#1b4d3e] shadow"
+                  : "text-white/70 hover:text-white bg-white/5 hover:bg-white/10"
+              }`}
+            >
+              <Landmark size={12} />
+              <span>Temple Heritage</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTemplate("elegant-pastel")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                activeTemplate === "elegant-pastel"
+                  ? "bg-[#F7ECE8] text-[#7D4948] shadow font-bold"
+                  : "text-white/70 hover:text-white bg-white/5 hover:bg-white/10"
+              }`}
+            >
+              <Flower2 size={12} className={activeTemplate === "elegant-pastel" ? "text-[#B47674]" : ""} />
+              <span>Elegant Pastel Romance</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTemplate("lake-como-letters")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                activeTemplate === "lake-como-letters"
+                  ? "bg-[#3f5138] text-[#f9f7f2] shadow font-bold"
+                  : "text-white/70 hover:text-white bg-white/5 hover:bg-white/10"
+              }`}
+            >
+              <Mail size={12} className={activeTemplate === "lake-como-letters" ? "text-[#c5a46d]" : ""} />
+              <span>Lake Como Letters</span>
             </button>
           </div>
-        </div>
+        </header>
       )}
 
-      {/* Render Selected Template */}
-      {activeTemplate === "lake-como-letters" ? (
-        <LakeComoLetters data={sampleLakeComoData} />
-      ) : activeTemplate === "elegant-pastel" ? (
-        <ElegantPastel data={samplePastelData} />
-      ) : activeTemplate === "temple-heritage" ? (
-        <TempleHeritage data={sampleTempleData} />
-      ) : (
-        <RoyalGold data={sampleWeddingData} />
-      )}
+      {/* Render Selected Full-Screen Template */}
+      <div className="w-full min-h-screen">
+        {activeTemplate === "lake-como-letters" || activeTemplate === "lakecomo-letters" ? (
+          <LakeComoLetters data={sampleLakeComoData} />
+        ) : activeTemplate === "elegant-pastel" || activeTemplate === "elegant-pastel-romance" ? (
+          <ElegantPastel data={samplePastelData} />
+        ) : activeTemplate === "temple-heritage" ? (
+          <TempleHeritage data={sampleTempleData} />
+        ) : (
+          <RoyalGold data={sampleWeddingData} />
+        )}
+      </div>
     </div>
   );
 }

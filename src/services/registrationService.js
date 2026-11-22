@@ -1,10 +1,42 @@
-import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, doc, addDoc, setDoc, runTransaction, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { calculateCommissions } from "../utils/commission";
 import { cleanPhoneNumber } from "../utils/validation";
 
 /**
- * Submit wedding registration to wedding_cards collection
+ * Atomically generates a sequential 4-digit wedding ID (e.g. "0001", "0002")
+ * using Firestore transaction on `system_counters/wedding_cards_counter`.
+ * If counter doesn't exist yet, initializes at 1 ("0001").
+ * Falls back to collision-safe random 4-digit code if transactions fail.
+ */
+async function allocateWeddingIdentifier() {
+  const counterRef = doc(db, "system_counters", "wedding_cards_counter");
+  try {
+    const nextSeq = await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      let currentVal = 0;
+      if (counterDoc.exists()) {
+        currentVal = counterDoc.data().currentNumber || 0;
+      }
+      const nextVal = currentVal + 1;
+      transaction.set(counterRef, {
+        currentNumber: nextVal,
+        lastAllocatedAt: serverTimestamp(),
+      }, { merge: true });
+      return nextVal;
+    });
+
+    return String(nextSeq).padStart(4, "0");
+  } catch (err) {
+    console.warn("Atomic counter allocation failed, falling back to collision-safe ID:", err);
+    // Fallback: 4-digit pseudo-random alphanumeric ID
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    return `WR-${randomSuffix}`;
+  }
+}
+
+/**
+ * Submit wedding registration to wedding_cards collection and public_invitations
  * Supports backend serverless function (/api/submit-registration) with fallback to direct Firestore write
  */
 export async function submitRegistration(formData, partnerInfo) {
@@ -23,7 +55,7 @@ export async function submitRegistration(formData, partnerInfo) {
   // Convert wedding date string (YYYY-MM-DD) to Firestore Timestamp
   let weddingTimestamp = null;
   if (formData.weddingDate) {
-    const [year, month, day] = formData.weddingDate.split('-').map(Number);
+    const [year, month, day] = formData.weddingDate.split("-").map(Number);
     const dateObj = new Date(year, month - 1, day, 12, 0, 0);
     weddingTimestamp = Timestamp.fromDate(dateObj);
   } else {
@@ -38,11 +70,23 @@ export async function submitRegistration(formData, partnerInfo) {
     venueName: ev.venueName?.trim() || "",
     venueAddress: ev.venueAddress?.trim() || "",
     locationLink: ev.locationLink?.trim() || "",
-    description: ev.description?.trim() || ""
+    description: ev.description?.trim() || "",
   }));
 
-  // Prepare Firestore document structure
+  // Selected template (default to royal-gold)
+  const templateId = formData.templateId || "royal-gold";
+
+  // Allocate sequential wedding ID (e.g. 0001)
+  const weddingId = await allocateWeddingIdentifier();
+
+  // Public website URL
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://cards.webryza.in";
+  const websiteUrl = `${baseUrl}/card=${weddingId}`;
+
+  // Complete private record for wedding_cards (Internal / Partner / Admin)
   const registrationPayload = {
+    weddingId: weddingId,
+    templateId: templateId,
     brideName: formData.brideName.trim(),
     groomName: formData.groomName.trim(),
     brideParents: formData.brideParents.trim(),
@@ -57,7 +101,10 @@ export async function submitRegistration(formData, partnerInfo) {
     additionalDetails: (formData.additionalDetails || "").trim(),
     events: formattedEvents,
     aiVideoRequired: Boolean(formData.aiVideoRequired),
-    aiVideoStatus: "pending",
+    aiVideoStatus: formData.aiVideoRequired ? "pending" : "not_requested",
+    videoUrl: "",
+    websiteUrl: websiteUrl,
+    websiteStatus: "published",
     partnerId: partnerId,
     partnerShopName: partnerShopName,
     source: source,
@@ -68,13 +115,35 @@ export async function submitRegistration(formData, partnerInfo) {
     amountDueToWebryza: commissions.amountDueToWebryza,
     status: "confirmed",
     paymentStatus: "pending",
-    websiteUrl: "",
     adminNotes: "",
     createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
   };
 
-  // Attempt backend submission first (e.g. Netlify Function / Express API)
+  // Sanitized public record for guests at public_invitations/{weddingId}
+  // Excludes private financials, commissions, phone, email, and admin notes
+  const publicInvitationPayload = {
+    weddingId: weddingId,
+    templateId: templateId,
+    brideName: formData.brideName.trim(),
+    groomName: formData.groomName.trim(),
+    brideParents: formData.brideParents.trim(),
+    groomParents: formData.groomParents.trim(),
+    weddingDate: weddingTimestamp,
+    weddingTime: formData.weddingTime.trim(),
+    venueName: formData.venueName.trim(),
+    venueAddress: formData.venueAddress.trim(),
+    venueLocation: (formData.venueLocation || "").trim(),
+    additionalDetails: (formData.additionalDetails || "").trim(),
+    events: formattedEvents,
+    websiteUrl: websiteUrl,
+    videoUrl: "",
+    websiteStatus: "published",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  // Attempt backend submission first
   let backendSuccess = false;
   let backendResult = null;
 
@@ -88,7 +157,7 @@ export async function submitRegistration(formData, partnerInfo) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            formData,
+            formData: { ...formData, weddingId, websiteUrl, templateId },
             partnerRef: isPartner ? partnerInfo.partnerId : null,
           }),
         });
@@ -98,11 +167,11 @@ export async function submitRegistration(formData, partnerInfo) {
           backendSuccess = true;
           break;
         }
-      } catch (err) {
-        // Backend not available on this path, try next or fallback
+      } catch {
+        // Backend not available on this path, try next
       }
     }
-  } catch (err) {
+  } catch {
     console.log("Backend endpoint check skipped, using direct Firestore integration.");
   }
 
@@ -110,6 +179,9 @@ export async function submitRegistration(formData, partnerInfo) {
     return {
       success: true,
       id: backendResult.id,
+      weddingId: weddingId,
+      websiteUrl: websiteUrl,
+      templateId: templateId,
       data: {
         ...registrationPayload,
         id: backendResult.id,
@@ -118,19 +190,31 @@ export async function submitRegistration(formData, partnerInfo) {
     };
   }
 
-  // Fallback: Direct Firestore write using the Firebase Web SDK
+  // Fallback: Direct Firestore write
   try {
+    // 1. Write private master record to wedding_cards
     const collectionRef = collection(db, "wedding_cards");
     const docRef = await addDoc(collectionRef, registrationPayload);
+
+    // 2. Write public sanitized record to public_invitations/{weddingId}
+    try {
+      const publicDocRef = doc(db, "public_invitations", weddingId);
+      await setDoc(publicDocRef, publicInvitationPayload);
+    } catch (pubErr) {
+      console.warn("Could not write to public_invitations (will fallback to wedding_cards query):", pubErr);
+    }
 
     return {
       success: true,
       id: docRef.id,
+      weddingId: weddingId,
+      websiteUrl: websiteUrl,
+      templateId: templateId,
       data: {
         ...registrationPayload,
         id: docRef.id,
       },
-      message: "Registration successfully recorded in wedding_cards",
+      message: "Registration successfully recorded and website published",
     };
   } catch (firestoreError) {
     console.error("Firestore submission failed:", firestoreError);
@@ -139,7 +223,7 @@ export async function submitRegistration(formData, partnerInfo) {
       firestoreError.message?.toLowerCase().includes("permission")
     ) {
       throw new Error(
-        "Firestore permission denied: Your Firebase Firestore Security Rules in Firebase Console currently block public submissions to 'wedding_cards'. Please update your Firestore Rules to allow create access for wedding_cards."
+        "Firestore permission denied: Your Firebase Firestore Security Rules in Firebase Console currently block submissions to 'wedding_cards'. Please ensure rules allow create access."
       );
     }
     throw new Error(

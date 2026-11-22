@@ -11,7 +11,10 @@ import {
 const FormContext = createContext(null);
 
 const INITIAL_FORM_STATE = {
-  // Section A: Couple Details
+  // Step 1: Template Selection
+  templateId: "royal-gold",
+
+  // Step 2: Couple Details
   brideName: "",
   groomName: "",
   brideParents: "",
@@ -19,7 +22,7 @@ const INITIAL_FORM_STATE = {
   phone: "",
   email: "",
 
-  // Section B: Wedding Details
+  // Step 3: Wedding Details
   weddingDate: "",
   weddingTime: "",
   venueName: "",
@@ -27,13 +30,11 @@ const INITIAL_FORM_STATE = {
   venueLocation: "",
   additionalDetails: "",
 
-  // Section C: Wedding Events
+  // Step 4: Wedding Events
   events: [],
 
-  // Section D: AI Video Requirement
+  // Step 5: AI Video & Package Pricing
   aiVideoRequired: false,
-
-  // Section E: Amount Charged
   amountCharged: "1500",
 };
 
@@ -96,7 +97,7 @@ export const FormProvider = ({ children }) => {
     }
   };
 
-  // Event handlers for Section C
+  // Event handlers for Step 4
   const addEvent = (newEvent) => {
     setFormData((prev) => ({
       ...prev,
@@ -123,10 +124,14 @@ export const FormProvider = ({ children }) => {
     let stepErrors = {};
 
     if (stepNumber === 1) {
-      stepErrors = validateCoupleDetails(formData);
+      if (!formData.templateId) {
+        stepErrors.templateId = "Please choose a wedding template to proceed";
+      }
     } else if (stepNumber === 2) {
-      stepErrors = validateWeddingDetails(formData);
+      stepErrors = validateCoupleDetails(formData);
     } else if (stepNumber === 3) {
+      stepErrors = validateWeddingDetails(formData);
+    } else if (stepNumber === 4) {
       // Events are optional to add, but if any event has empty required fields, flag it
       formData.events.forEach((ev, idx) => {
         const evErr = validateEvent(ev);
@@ -134,8 +139,8 @@ export const FormProvider = ({ children }) => {
           stepErrors[`event_${idx}`] = evErr;
         }
       });
-    } else if (stepNumber === 4) {
-      // Section D (AI Video) and Section E (Amount)
+    } else if (stepNumber === 5) {
+      // Package and amount
       const amtErr = validateAmount(formData.amountCharged);
       if (amtErr) {
         stepErrors.amountCharged = amtErr;
@@ -149,7 +154,7 @@ export const FormProvider = ({ children }) => {
   // Navigation handlers
   const nextStep = () => {
     if (validateCurrentStep(step)) {
-      setStep((prev) => Math.min(prev + 1, 5));
+      setStep((prev) => Math.min(prev + 1, 6));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -160,7 +165,6 @@ export const FormProvider = ({ children }) => {
   };
 
   const goToStep = (targetStep) => {
-    // Only allow going backwards or jumping if prior steps are valid
     if (targetStep < step) {
       setStep(targetStep);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -172,7 +176,7 @@ export const FormProvider = ({ children }) => {
     }
   };
 
-  // Form submission
+  // Form submission (Step 6 -> Step 7 Generating -> Step 8 Result)
   const submitForm = async () => {
     // Validate all steps
     const coupleErrors = validateCoupleDetails(formData);
@@ -184,10 +188,11 @@ export const FormProvider = ({ children }) => {
       ...weddingErrors,
     };
     if (amountError) allErrors.amountCharged = amountError;
+    if (!formData.templateId) allErrors.templateId = "Please choose a wedding template.";
 
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
-      setSubmissionError("Please review and fix highlighted fields before submitting.");
+      setSubmissionError("Please review and fix highlighted fields before generating your website.");
       return;
     }
 
@@ -200,8 +205,7 @@ export const FormProvider = ({ children }) => {
       setIsSubmitted(true);
     } catch (err) {
       console.error("Submission error:", err);
-      // Requirement: Do not clear the form if submission fails
-      setSubmissionError(err.message || "Failed to submit registration. Your entries have been saved, please try again.");
+      setSubmissionError(err.message || "Failed to generate wedding website. Your entered details have been saved, please try again.");
     } finally {
       setIsSubmitting(false);
     }
