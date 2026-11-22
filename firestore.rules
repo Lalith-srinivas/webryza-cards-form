@@ -3,25 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =========================================================================
-    // AUTHENTICATION & ROLE HELPERS
-    // =========================================================================
-
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // WebRyza Administrator: Any authenticated staff member who is not a partner
-    function isAdmin() {
-      return isAuthenticated() && 
-        (!('role' in request.auth.token) || request.auth.token.role != 'partner');
-    }
-
-    // Partner Role: Authenticated user with deterministic partner email or role claim
+    // Identifies partner login accounts via their deterministic synthetic email domain
     function isPartner() {
       return isAuthenticated() && 
         (request.auth.token.email.matches('.*@partner\\.webryza\\.in$') ||
          ('role' in request.auth.token && request.auth.token.role == 'partner'));
+    }
+
+    // WebRyza Administrator: Any authenticated staff member who is not a partner
+    function isAdmin() {
+      return isAuthenticated() && !isPartner();
     }
 
     // Helper to check if a partner owns a record via their authUid or loginEmail in wedding_partners
@@ -36,49 +32,20 @@ service cloud.firestore {
         );
     }
 
-    // =========================================================================
-    // 1. WEDDING CARDS & REGISTRATIONS
-    // =========================================================================
-
-    // Wedding card form submissions from couples / clients
-    // - Public visitors can CREATE without login (with required bride, groom, phone)
-    // - Authenticated Partners can READ their own registered projects
-    // - Admin can READ, UPDATE payment/website, and DELETE all projects
-    // - Public visitors can READ published wedding invitations
-    match /wedding_cards/{cardId} {
-      allow create: if request.resource.data.brideName is string
-                    && request.resource.data.groomName is string
-                    && request.resource.data.phone is string
-                    && request.resource.data.amountCharged is number
-                    && request.resource.data.amountCharged >= 1500;
-      
-      // Allow read for public wedding invitations & partners/admins
-      allow read: if true;
-      allow update, delete: if isAdmin();
+    // ==================================================
+    // 1. WebRyza Existing Projects Collection
+    // ==================================================
+    match /projects/{projectId} {
+      allow read, write: if isAdmin();
     }
 
-    // Public Sanitized Wedding Invitations
-    // Accessible by wedding guests without exposing private contact or payment info
-    match /public_invitations/{invitationId} {
-      allow read: if true;
-      allow create: if request.resource.data.weddingId is string
-                    && request.resource.data.brideName is string;
-      allow update, delete: if isAdmin();
-    }
-
-    // System Counters for Atomic Sequential ID Allocations (e.g. 0001, 0002)
-    match /system_counters/{counterId} {
-      allow read, write: if true;
-    }
-
-    // Partner directory (QR codes / print shop referrals)
-    // - Administrators have full control
-    // - Partners can read their own record
-    // - Public registration form can read active partner info to display shop name
+    // ==================================================
+    // 2. Wedding Partners Collection
+    // ==================================================
     match /wedding_partners/{partnerId} {
       allow read, write: if isAdmin();
 
-      // Partners can read only their own partner profile established by their authUid or loginEmail
+      // Partners can read their own profile by authUid or loginEmail
       allow get: if isPartner() && (
         resource.data.authUid == request.auth.uid ||
         resource.data.loginEmail == request.auth.token.email
@@ -93,96 +60,65 @@ service cloud.firestore {
       allow get: if resource.data.isActive == true;
     }
 
-    // Partner Usernames Mapping Collection
+    // ==================================================
+    // 3. Partner Usernames Mapping Collection
+    // ==================================================
     match /partner_usernames/{username} {
       allow read, write: if isAdmin();
-      // Public / partner login lookup
       allow get: if true;
     }
 
-    // Wedding Payments Collection
+    // ==================================================
+    // 4. Wedding Cards Collection (Master Records)
+    // ==================================================
+    match /wedding_cards/{cardId} {
+      allow write: if isAdmin();
+
+      // Allow guests, couples, partners, and admins to read the invitation
+      allow read: if true;
+
+      // Public registration form submission with strict business validation
+      allow create: if 
+        request.resource.data.amountCharged is number &&
+        request.resource.data.amountCharged >= 1500 &&
+        request.resource.data.brideName is string &&
+        request.resource.data.brideName.size() > 0 &&
+        request.resource.data.groomName is string &&
+        request.resource.data.groomName.size() > 0 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() > 0 &&
+        request.resource.data.status == 'confirmed' &&
+        request.resource.data.paymentStatus == 'pending' &&
+        request.resource.data.amountReceivedByWebryza == 0 &&
+        (
+          (request.resource.data.amountCharged < 2000 && request.resource.data.webryzaShare == 1000) ||
+          (request.resource.data.amountCharged >= 2000 && request.resource.data.webryzaShare == 1500)
+        );
+    }
+
+    // ==================================================
+    // 5. Public Sanitized Wedding Invitations
+    // ==================================================
+    match /public_invitations/{invitationId} {
+      allow read: if true;
+      allow create: if request.resource.data.weddingId is string
+                    && request.resource.data.brideName is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // ==================================================
+    // 6. System Counters (For Sequential Wedding IDs)
+    // ==================================================
+    match /system_counters/{counterId} {
+      allow read, write: if true;
+    }
+
+    // ==================================================
+    // 7. Wedding Payments Collection
+    // ==================================================
     match /wedding_payments/{paymentId} {
       allow read, write: if isAdmin();
-      allow read: if isPartner() && (
-        resource.data.partnerId == request.auth.token.partnerCode ||
-        resource.data.partnerId == request.auth.token.partnerId
-      );
-    }
-
-    // Digital wedding RSVPs / Guest wishes / Orders
-    match /wedding_rsvps/{rsvpId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /wedding_orders/{orderId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    // =========================================================================
-    // 2. WEBRYZA CONTACT FORMS & CLIENT INQUIRIES
-    // =========================================================================
-
-    match /inquiries/{inquiryId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /contacts/{contactId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /contact_submissions/{submissionId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /messages/{messageId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /leads/{leadId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    // =========================================================================
-    // 3. GESTURE STUDIO & COMMUNITY (If sharing this database)
-    // =========================================================================
-
-    match /leaderboards/{board}/entries/{userId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /usernames/{username} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if isAdmin();
-
-      match /{allChildren=**} {
-        allow read: if true;
-        allow write: if isAdmin();
-      }
-    }
-
-    // Existing Projects Collection
-    match /projects/{projectId} {
-      allow read, write: if isAdmin();
-    }
-
-    // =========================================================================
-    // 4. DEFAULT FALLBACK
-    // =========================================================================
-    match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read: if isPartnerRecordOwner(resource.data.partnerId);
     }
   }
 }

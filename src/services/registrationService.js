@@ -76,7 +76,7 @@ export async function submitRegistration(formData, partnerInfo) {
   // Selected template (default to royal-gold)
   const templateId = formData.templateId || "royal-gold";
 
-  // Allocate sequential wedding ID (e.g. 0001)
+  // Allocate sequential wedding ID (e.g. 0001 or WR-XXXX)
   const weddingId = await allocateWeddingIdentifier();
 
   // Public website URL
@@ -129,7 +129,7 @@ export async function submitRegistration(formData, partnerInfo) {
     groomName: formData.groomName.trim(),
     brideParents: formData.brideParents.trim(),
     groomParents: formData.groomParents.trim(),
-    weddingDate: weddingTimestamp,
+    weddingDate: formData.weddingDate || "",
     weddingTime: formData.weddingTime.trim(),
     venueName: formData.venueName.trim(),
     venueAddress: formData.venueAddress.trim(),
@@ -139,9 +139,22 @@ export async function submitRegistration(formData, partnerInfo) {
     websiteUrl: websiteUrl,
     videoUrl: "",
     websiteStatus: "published",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
   };
+
+  // Cache locally immediately so the newly generated invitation opens instantly on this device
+  try {
+    if (typeof window !== "undefined") {
+      const localRecord = JSON.stringify({
+        ...publicInvitationPayload,
+        createdAt: new Date().toISOString(),
+      });
+      localStorage.setItem(`webryza_invitation_${weddingId}`, localRecord);
+      localStorage.setItem("webryza_last_invitation", localRecord);
+      sessionStorage.setItem(`webryza_invitation_${weddingId}`, localRecord);
+    }
+  } catch {
+    // Local storage full or private mode
+  }
 
   // Attempt backend submission first
   let backendSuccess = false;
@@ -199,7 +212,12 @@ export async function submitRegistration(formData, partnerInfo) {
     // 2. Write public sanitized record to public_invitations/{weddingId}
     try {
       const publicDocRef = doc(db, "public_invitations", weddingId);
-      await setDoc(publicDocRef, publicInvitationPayload);
+      await setDoc(publicDocRef, {
+        ...publicInvitationPayload,
+        weddingDate: weddingTimestamp,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     } catch (pubErr) {
       console.warn("Could not write to public_invitations (will fallback to wedding_cards query):", pubErr);
     }
