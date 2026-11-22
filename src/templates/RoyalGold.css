@@ -1,0 +1,724 @@
+/* ==========================================================================
+   ROYAL GOLD - Luxury Indian Wedding Invitation Website Theme
+   WebRyza Cards — Digital Wedding Invitations
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;600;700;900&family=Marcellus&family=Alex+Brush&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --rg-gold-dark: #8B6514;
+  --rg-gold: #C5A059;
+  --rg-gold-bright: #D4AF37;
+  --rg-gold-light: #EEDEB3;
+  --rg-gold-foil: linear-gradient(135deg, #B38728 0%, #FBF5B7 25%, #DAA520 50%, #AA771C 75%, #FDF7B8 100%);
+  --rg-gold-shimmer: linear-gradient(90deg, #996515 0%, #D4AF37 25%, #FFF2B2 50%, #D4AF37 75%, #996515 100%);
+  
+  --rg-maroon-dark: #38020E;
+  --rg-maroon: #580B1C;
+  --rg-maroon-light: #7E152C;
+  
+  --rg-ivory: #FAF7F0;
+  --rg-ivory-light: #FDFBF7;
+  --rg-ivory-warm: #F4EEDF;
+  --rg-cream: #FCF9F2;
+  --rg-charcoal: #231C16;
+  --rg-charcoal-muted: #5C5247;
+  
+  --rg-font-display: 'Cinzel Decorative', 'Cormorant Garamond', Georgia, serif;
+  --rg-font-serif: 'Marcellus', 'Cormorant Garamond', Georgia, serif;
+  --rg-font-script: 'Alex Brush', cursive, serif;
+  --rg-font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  
+  --rg-shadow-gold: 0 10px 30px -5px rgba(197, 160, 89, 0.25);
+  --rg-shadow-card: 0 15px 40px -10px rgba(56, 2, 14, 0.08), 0 0 0 1px rgba(212, 175, 55, 0.25);
+  --rg-shadow-hover: 0 20px 45px -10px rgba(139, 101, 20, 0.22), 0 0 0 1px rgba(212, 175, 55, 0.45);
+}
+
+/* Base Wrapper */
+.rg-royal-wrapper {
+  font-family: var(--rg-font-serif);
+  background-color: var(--rg-ivory);
+  color: var(--rg-charcoal);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Background Texture */
+.rg-royal-wrapper::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 10% 50%, rgba(88, 11, 28, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Typography Helpers */
+.rg-display {
+  font-family: var(--rg-font-display);
+}
+
+.rg-script {
+  font-family: var(--rg-font-script);
+}
+
+.rg-sans {
+  font-family: var(--rg-font-sans);
+}
+
+.rg-gold-foil-text {
+  background: var(--rg-gold-foil);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.rg-gold-shimmer-text {
+  background: var(--rg-gold-shimmer);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rgShimmer 8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes rgShimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Royal Palace Arch Border Frame */
+.rg-palace-border {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 
+    inset 0 0 0 4px rgba(253, 251, 247, 0.9),
+    inset 0 0 0 5px rgba(212, 175, 55, 0.3),
+    0 10px 30px -5px rgba(139, 101, 20, 0.15);
+}
+
+.rg-palace-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 24px;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--rg-shadow-card);
+}
+
+.rg-palace-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.7);
+  box-shadow: var(--rg-shadow-hover);
+}
+
+/* Corner Filigree Details */
+.rg-corner-bracket {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--rg-gold);
+  pointer-events: none;
+}
+
+.rg-corner-tl {
+  top: 10px;
+  left: 10px;
+  border-top: 2px solid var(--rg-gold);
+  border-left: 2px solid var(--rg-gold);
+}
+
+.rg-corner-tr {
+  top: 10px;
+  right: 10px;
+  border-top: 2px solid var(--rg-gold);
+  border-right: 2px solid var(--rg-gold);
+}
+
+.rg-corner-bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom: 2px solid var(--rg-gold);
+  border-left: 2px solid var(--rg-gold);
+}
+
+.rg-corner-br {
+  bottom: 10px;
+  right: 10px;
+  border-bottom: 2px solid var(--rg-gold);
+  border-right: 2px solid var(--rg-gold);
+}
+
+/* Gold Pill & Buttons */
+.rg-gold-btn {
+  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #A67C1E 100%);
+  color: #FFFFFF;
+  font-family: var(--rg-font-serif);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 18px rgba(184, 134, 11, 0.35);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.rg-gold-btn:hover {
+  background: linear-gradient(135deg, #C59B27 0%, #DFBE4B 50%, #B8860B 100%);
+  box-shadow: 0 8px 25px rgba(184, 134, 11, 0.5);
+  transform: translateY(-2px);
+}
+
+.rg-maroon-pill {
+  background-color: var(--rg-maroon);
+  color: #FFFDF7;
+  border: 1px solid var(--rg-gold);
+  box-shadow: 0 4px 12px rgba(88, 11, 28, 0.25);
+}
+
+/* Floating Audio Player */
+.rg-floating-audio {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #580B1C 0%, #38020E 100%);
+  border: 2px solid var(--rg-gold-bright);
+  color: var(--rg-gold-light);
+  box-shadow: 0 8px 24px rgba(56, 2, 14, 0.4);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rg-floating-audio:hover {
+  transform: scale(1.08);
+  border-color: #FFF2B2;
+  box-shadow: 0 10px 28px rgba(212, 175, 55, 0.45);
+}
+
+.rg-audio-spin {
+  animation: rgRotate 12s linear infinite;
+}
+
+@keyframes rgRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Hero Section */
+.rg-hero-container {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 80px 20px;
+  overflow: hidden;
+}
+
+.rg-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at center, rgba(253, 251, 247, 0.95) 0%, rgba(244, 238, 223, 0.92) 65%, rgba(235, 222, 196, 0.96) 100%);
+  z-index: 1;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ROYAL GOLD FLORAL BORDER OVERLAY (MATCHING USER'S UPLOADED DESIGN)
+   Tailored for pixel-perfect alignment across Mobile, Tablet, and Laptop
+══════════════════════════════════════════════════════════════════════════ */
+.rg-hero-floral-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+/* Top-Right Floral Bouquet */
+.rg-floral-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: clamp(140px, 25vw, 320px);
+  max-width: 340px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.96;
+  filter: drop-shadow(0 4px 14px rgba(139, 101, 20, 0.16));
+  transform-origin: top right;
+  transition: transform 0.4s ease;
+}
+
+/* Left Climbing Floral Vine */
+.rg-floral-left {
+  position: absolute;
+  top: 10%;
+  left: 0;
+  width: clamp(80px, 15vw, 200px);
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.94;
+  filter: drop-shadow(0 4px 14px rgba(139, 101, 20, 0.16));
+  transform-origin: left center;
+}
+
+/* Bottom-Right Blooming Peony */
+.rg-floral-br {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: clamp(150px, 26vw, 340px);
+  max-width: 360px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.96;
+  filter: drop-shadow(0 4px 14px rgba(139, 101, 20, 0.16));
+  transform-origin: bottom right;
+}
+
+/* Mobile Alignment (< 640px) */
+@media (max-width: 640px) {
+  .rg-floral-tr {
+    width: clamp(120px, 32vw, 160px);
+    top: -4px;
+    right: -4px;
+    opacity: 0.92;
+  }
+  
+  .rg-floral-left {
+    width: clamp(65px, 18vw, 95px);
+    top: 16%;
+    left: -4px;
+    opacity: 0.88;
+  }
+
+  .rg-floral-br {
+    width: clamp(130px, 35vw, 175px);
+    bottom: -4px;
+    right: -4px;
+    opacity: 0.92;
+  }
+}
+
+/* Tablet Alignment (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .rg-floral-tr {
+    width: clamp(190px, 24vw, 250px);
+    top: 0;
+    right: 0;
+  }
+
+  .rg-floral-left {
+    width: clamp(115px, 14vw, 155px);
+    top: 12%;
+    left: 0;
+  }
+
+  .rg-floral-br {
+    width: clamp(210px, 25vw, 275px);
+    bottom: 0;
+    right: 0;
+  }
+}
+
+/* Laptop / Desktop Alignment (> 1024px) */
+@media (min-width: 1025px) {
+  .rg-floral-tr {
+    width: 300px;
+    top: 0;
+    right: 0;
+  }
+
+  .rg-floral-left {
+    width: 190px;
+    top: 8%;
+    left: 0;
+  }
+
+  .rg-floral-br {
+    width: 320px;
+    bottom: 0;
+    right: 0;
+  }
+}
+
+/* Page Edge Ambient Florals for Tablet & Laptop */
+.rg-page-side-florals {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.rg-fixed-floral-left {
+  position: absolute;
+  top: 42%;
+  left: 0;
+  width: clamp(70px, 8vw, 130px);
+  opacity: 0.38;
+  transform-origin: left center;
+  filter: drop-shadow(0 2px 8px rgba(139, 101, 20, 0.12));
+}
+
+.rg-fixed-floral-right {
+  position: absolute;
+  top: 65%;
+  right: 0;
+  width: clamp(80px, 10vw, 150px);
+  opacity: 0.38;
+  transform-origin: right center;
+  filter: drop-shadow(0 2px 8px rgba(139, 101, 20, 0.12));
+}
+
+@media (max-width: 768px) {
+  .rg-page-side-florals {
+    display: none;
+  }
+}
+
+.rg-hero-mandala-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(850px, 120vw);
+  height: min(850px, 120vw);
+  opacity: 0.055;
+  pointer-events: none;
+  animation: rgRotate 120s linear infinite;
+  z-index: 2;
+}
+
+.rg-hero-arch-frame {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  max-width: 820px;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.98), rgba(252, 249, 242, 0.92));
+  border-radius: 280px 280px 32px 32px;
+  padding: 64px 32px 52px 32px;
+  box-shadow: 
+    0 25px 60px -15px rgba(88, 11, 28, 0.12),
+    0 0 0 1px rgba(212, 175, 55, 0.4),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.9),
+    inset 0 0 0 8px rgba(212, 175, 55, 0.35);
+  text-align: center;
+}
+
+/* Celebration Eyebrow with Perfect Optical & Mathematical Centering */
+.rg-hero-celebration-title {
+  display: block;
+  text-align: center;
+  text-transform: uppercase;
+  color: #8B6514;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em; /* Exactly offsets the trailing letter-spacing for 100% true optical center */
+  font-size: clamp(0.72rem, 1.8vw, 0.875rem);
+  white-space: nowrap;
+  margin: 0 auto 14px auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .rg-hero-arch-frame {
+    border-radius: 200px 200px 24px 24px;
+    padding: 62px 20px 42px 20px;
+  }
+
+  .rg-hero-celebration-title {
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+    font-size: clamp(0.64rem, 2.7vw, 0.74rem);
+    margin-bottom: 12px;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Scroll Indicator */
+.rg-scroll-indicator {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+.rg-mouse-icon {
+  width: 22px;
+  height: 36px;
+  border: 2px solid var(--rg-gold);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.rg-wheel {
+  width: 3px;
+  height: 8px;
+  background-color: var(--rg-maroon);
+  border-radius: 2px;
+  animation: rgWheel 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes rgWheel {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(8px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Portrait Arch Frames for Couple Section */
+.rg-portrait-arch {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  border-radius: 160px 160px 24px 24px;
+  overflow: hidden;
+  position: relative;
+  background: #EEDEB3;
+  box-shadow: 
+    0 15px 35px -8px rgba(88, 11, 28, 0.15),
+    0 0 0 4px #FFFFFF,
+    0 0 0 6px var(--rg-gold);
+}
+
+.rg-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rg-portrait-arch:hover .rg-portrait-img {
+  transform: scale(1.05);
+}
+
+.rg-portrait-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #FAF7F0 0%, #EFE5D0 100%);
+  color: var(--rg-gold-dark);
+  padding: 20px;
+}
+
+/* Countdown Card */
+.rg-countdown-item {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 
+    inset 0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 8px 20px rgba(139, 101, 20, 0.08);
+  border-radius: 20px;
+  padding: 18px 12px;
+  text-align: center;
+  min-width: 75px;
+  flex: 1;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .rg-countdown-item {
+    min-width: 100px;
+    padding: 24px 16px;
+  }
+}
+
+/* Lightbox Modal */
+.rg-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 6, 8, 0.94);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: rgFadeIn 0.3s ease-out;
+}
+
+@keyframes rgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rg-lightbox-content {
+  position: relative;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rg-lightbox-img {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 2px solid var(--rg-gold);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .rg-hero-mandala-bg,
+  .rg-audio-spin,
+  .rg-wheel,
+  .rg-gold-shimmer-text {
+    animation: none !important;
+  }
+  
+  .rg-palace-card,
+  .rg-gold-btn,
+  .rg-portrait-img {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   9:16 VERTICAL VIDEO REEL PLAYER (MOBILE & LAPTOP RESPONSIVE)
+   ========================================================================== */
+.rg-video-container-9-16 {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.rg-video-wrapper-9-16 {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  background: #000000;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(56, 2, 14, 0.35);
+  border: 2px solid rgba(212, 175, 55, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rg-video-wrapper-9-16 video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rg-video-wrapper-9-16 iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Video Top Controls Overlay */
+.rg-video-top-controls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.rg-video-top-controls button {
+  pointer-events: auto;
+}
+
+.rg-video-fs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 100px;
+  background: rgba(56, 2, 14, 0.88);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.rg-video-fs-btn:hover {
+  background: #580B1C;
+  transform: scale(1.05);
+  border-color: #FFF;
+}
+
+.rg-video-sound-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 100px;
+  background: rgba(56, 2, 14, 0.9);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #D4AF37;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.rg-video-sound-pill:hover {
+  background: #580B1C;
+  transform: scale(1.05);
+}
+
+/* Fullscreen 9:16 Enforcement: ensures video plays strictly in 9:16 ratio on laptops/desktops */
+.rg-video-wrapper-9-16 video:fullscreen,
+.rg-video-wrapper-9-16 video:-webkit-full-screen,
+.rg-video-wrapper-9-16 video:-moz-full-screen,
+.rg-video-wrapper-9-16 video:-ms-fullscreen,
+video:fullscreen,
+video:-webkit-full-screen {
+  object-fit: contain !important;
+  background-color: #000000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+}

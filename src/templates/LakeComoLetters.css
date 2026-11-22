@@ -1,0 +1,1295 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600;1,700&family=Italiana&family=Great+Vibes&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap");
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LAKE COMO LETTERS - EUROPEAN EDITORIAL DESTINATION WEDDING
+   WebRyza Cards Studio • Digital Wedding Invitations
+   Inspired by Wedence Lake Como Letters Stationery Architecture
+══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --lcl-paper: #f9f7f2;
+  --lcl-paper-card: #ffffff;
+  --lcl-paper-soft: #f4efe6;
+  --lcl-paper-tint: #eae4d7;
+
+  --lcl-cypress: #283223;
+  --lcl-olive: #3f5138;
+  --lcl-sage: #75806b;
+  --lcl-sage-light: #9fa995;
+
+  --lcl-champagne: #d4be90;
+  --lcl-gold: #c5a46d;
+  --lcl-gold-light: #e6d3af;
+
+  --lcl-border-subtle: rgba(40, 50, 35, 0.12);
+  --lcl-border-olive: rgba(63, 81, 56, 0.25);
+  --lcl-border-gold: rgba(197, 164, 109, 0.45);
+
+  --lcl-font-cormorant: "Cormorant Garamond", Georgia, serif;
+  --lcl-font-italiana: "Italiana", "Cormorant Garamond", Georgia, serif;
+  --lcl-font-script: "Great Vibes", cursive;
+  --lcl-font-lato: "Lato", -apple-system, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASE RESETS & PAGE WRAPPER
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-page-wrapper {
+  background-color: var(--lcl-paper);
+  color: var(--lcl-cypress);
+  font-family: var(--lcl-font-lato);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lcl-container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 5;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FLOATING MUSIC & SHARE CONTROLS
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-floating-controls {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lcl-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: rgba(249, 247, 242, 0.94);
+  border: 1px solid var(--lcl-border-olive);
+  color: var(--lcl-cypress);
+  font-family: var(--lcl-font-lato);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px rgba(40, 50, 35, 0.08);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lcl-pill-btn:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  border-color: var(--lcl-olive);
+  box-shadow: 0 12px 30px rgba(40, 50, 35, 0.15);
+}
+
+.lcl-sound-wave-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 12px;
+}
+
+.lcl-sound-wave-bars span {
+  width: 2.5px;
+  background: var(--lcl-olive);
+  border-radius: 1px;
+  animation: lclEqualizer 0.8s ease-in-out infinite alternate;
+}
+
+.lcl-sound-wave-bars span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.lcl-sound-wave-bars span:nth-child(2) { height: 12px; animation-delay: 0.3s; }
+.lcl-sound-wave-bars span:nth-child(3) { height: 8px; animation-delay: 0.15s; }
+
+@keyframes lclEqualizer {
+  0% { height: 3px; }
+  100% { height: 13px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. HERO - THE OPENING LETTERS
+   (NO background video; pristine Italian editorial paper stationery)
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 24px 60px;
+  background: 
+    radial-gradient(circle at 50% 20%, rgba(212, 190, 144, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(117, 128, 107, 0.1) 0%, transparent 50%),
+    var(--lcl-paper);
+}
+
+.lcl-hero-inner {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lcl-hero-crest-monogram {
+  margin-bottom: 24px;
+}
+
+.lcl-laurel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 1px solid var(--lcl-gold);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(197, 164, 109, 0.2);
+  margin-bottom: 12px;
+}
+
+.lcl-laurel-initials {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--lcl-cypress);
+}
+
+.lcl-laurel-amp {
+  font-family: var(--lcl-font-script);
+  font-size: 1.6rem;
+  color: var(--lcl-gold);
+  margin: 0 3px;
+}
+
+.lcl-hero-eyebrow {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--lcl-olive);
+  margin: 0;
+}
+
+/* Couple Title */
+.lcl-hero-title {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(3.4rem, 8.5vw, 6.8rem);
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--lcl-cypress);
+  letter-spacing: 0.02em;
+  margin: 16px 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 24px;
+}
+
+.lcl-hero-amp {
+  font-family: var(--lcl-font-script);
+  font-size: clamp(3.2rem, 8vw, 6.4rem);
+  font-style: italic;
+  color: var(--lcl-gold);
+  line-height: 0.8;
+  margin: 0 6px;
+}
+
+.lcl-hero-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 380px;
+  margin: 8px 0 28px;
+}
+
+.lcl-sep-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lcl-gold), transparent);
+}
+
+.lcl-sep-diamond {
+  color: var(--lcl-gold);
+  font-size: 0.9rem;
+}
+
+/* Date Is Written Plaque */
+.lcl-date-plaque {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--lcl-border-gold);
+  border-radius: 20px;
+  padding: 24px 36px;
+  max-width: 520px;
+  margin-bottom: 36px;
+  box-shadow: 0 8px 30px rgba(40, 50, 35, 0.05);
+}
+
+.lcl-date-subtitle {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--lcl-sage);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lcl-date-highlight {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(1.4rem, 3.2vw, 1.9rem);
+  font-weight: 500;
+  color: var(--lcl-cypress);
+  margin: 0 0 4px;
+  letter-spacing: 0.04em;
+}
+
+.lcl-time-highlight {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--lcl-olive);
+  margin: 0 0 6px;
+}
+
+.lcl-venue-highlight {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--lcl-sage);
+  margin: 0;
+}
+
+/* Minimal Scroll Cue */
+.lcl-scroll-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--lcl-olive);
+  text-decoration: none;
+  font-family: var(--lcl-font-lato);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transition: opacity 0.3s ease;
+}
+
+.lcl-scroll-cue:hover {
+  opacity: 0.7;
+}
+
+.lcl-scroll-pill {
+  width: 20px;
+  height: 32px;
+  border: 1.5px solid var(--lcl-border-olive);
+  border-radius: 20px;
+  position: relative;
+}
+
+.lcl-scroll-dot {
+  width: 4px;
+  height: 6px;
+  background: var(--lcl-olive);
+  border-radius: 2px;
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: lclScroll 1.6s ease-in-out infinite;
+}
+
+@keyframes lclScroll {
+  0% { top: 5px; opacity: 1; }
+  70% { top: 16px; opacity: 0; }
+  100% { top: 5px; opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLOBAL SECTION HEADERS
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-section {
+  padding: 100px 0;
+  position: relative;
+  z-index: 10;
+}
+
+.lcl-section-header {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 56px;
+}
+
+.lcl-section-tag {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--lcl-olive);
+  margin-bottom: 12px;
+}
+
+.lcl-section-title {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 400;
+  color: var(--lcl-cypress);
+  letter-spacing: 0.02em;
+  line-height: 1.18;
+  margin: 0 0 14px;
+}
+
+.lcl-section-intro {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--lcl-sage);
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. THE INVITATION LETTER
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-invitation-section {
+  background: #fbfaf5;
+}
+
+.lcl-letter-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--lcl-border-gold);
+  border-radius: 28px;
+  padding: 72px 48px;
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(40, 50, 35, 0.06);
+}
+
+.lcl-letter-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: 1px dashed var(--lcl-gold);
+  border-radius: 8px;
+  background: var(--lcl-paper-soft);
+  margin-bottom: 24px;
+}
+
+.lcl-stamp-em {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--lcl-cypress);
+}
+
+.lcl-stamp-year {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--lcl-sage);
+}
+
+.lcl-letter-prologue {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+  color: var(--lcl-olive);
+  max-width: 620px;
+  margin: 0 auto 20px;
+  line-height: 1.45;
+}
+
+.lcl-letter-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 240px;
+  margin: 0 auto 28px;
+}
+
+.lcl-ornament-line {
+  flex: 1;
+  height: 1px;
+  background: var(--lcl-border-gold);
+}
+
+.lcl-ornament-motif {
+  color: var(--lcl-gold);
+  font-size: 1.1rem;
+}
+
+.lcl-letter-subheading {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.72rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--lcl-sage);
+  margin-bottom: 10px;
+}
+
+.lcl-letter-heading {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-weight: 400;
+  color: var(--lcl-cypress);
+  margin: 0 0 24px;
+  line-height: 1.15;
+}
+
+.lcl-letter-body {
+  font-family: var(--lcl-font-lato);
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  line-height: 1.85;
+  color: var(--lcl-olive);
+  max-width: 660px;
+  margin: 0 auto 36px;
+}
+
+.lcl-letter-signature-block {
+  margin-bottom: 36px;
+}
+
+.lcl-sig-couple {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 500;
+  color: var(--lcl-cypress);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.lcl-sig-couple em {
+  font-family: var(--lcl-font-script);
+  font-size: 2.4rem;
+  color: var(--lcl-gold);
+}
+
+.lcl-sig-parents {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--lcl-sage);
+  margin-top: 6px;
+}
+
+.lcl-letter-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 28px;
+  border-top: 1px solid var(--lcl-border-subtle);
+}
+
+.lcl-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--lcl-olive);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SCROLL TO REVEAL ANIMATIONS
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-reveal {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lcl-reveal-up {
+  transform: translateY(32px);
+}
+
+.lcl-reveal-scale {
+  transform: translateY(24px) scale(0.96);
+}
+
+.lcl-reveal.lcl-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Staggered entry transitions */
+.lcl-delay-1 { transition-delay: 0.1s; }
+.lcl-delay-2 { transition-delay: 0.2s; }
+.lcl-delay-3 { transition-delay: 0.3s; }
+.lcl-delay-4 { transition-delay: 0.4s; }
+.lcl-delay-5 { transition-delay: 0.5s; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CARD SCROLL FLOATING & ELEVATION
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-date-plaque,
+.lcl-letter-card,
+.lcl-story-chapter-card,
+.lcl-event-villa-card,
+.lcl-venue-editorial-card,
+.lcl-gallery-card,
+.lcl-video-canvas-wrapper {
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.lcl-story-chapter-card {
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.lcl-story-chapter-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 42px rgba(40, 50, 35, 0.1);
+  border-color: var(--lcl-border-gold);
+}
+
+.lcl-event-villa-card {
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.lcl-event-villa-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 24px 50px rgba(40, 50, 35, 0.12);
+  border-color: var(--lcl-border-gold);
+}
+
+.lcl-letter-card {
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease;
+}
+
+.lcl-letter-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 28px 65px rgba(40, 50, 35, 0.09);
+}
+
+.lcl-venue-editorial-card {
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.lcl-venue-editorial-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 55px rgba(40, 50, 35, 0.1);
+  border-color: var(--lcl-border-gold);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. THEIR STORY ("A collection of beautiful almosts...")
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-story-section {
+  background: #fbfaf5;
+}
+
+.lcl-story-chapters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.lcl-story-chapter-card {
+  background: #ffffff;
+  border: 1px solid var(--lcl-border-subtle);
+  border-radius: 20px;
+  padding: 32px 24px;
+  box-shadow: 0 10px 30px rgba(40, 50, 35, 0.04);
+  transition: transform 0.3s ease;
+}
+
+.lcl-story-chapter-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--lcl-gold);
+}
+
+.lcl-chapter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lcl-chapter-num {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--lcl-sage);
+}
+
+.lcl-chapter-year {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--lcl-gold);
+}
+
+.lcl-chapter-title {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: var(--lcl-cypress);
+  margin: 0 0 10px;
+}
+
+.lcl-chapter-desc {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--lcl-olive);
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. THE CELEBRATIONS ("A wedding told in ceremonies...")
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-events-section {
+  background: var(--lcl-paper);
+}
+
+.lcl-events-cards-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+}
+
+.lcl-event-villa-card {
+  background: #ffffff;
+  border: 1px solid var(--lcl-border-gold);
+  border-radius: 24px;
+  padding: 36px 30px;
+  box-shadow: 0 15px 45px rgba(40, 50, 35, 0.06);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.lcl-event-villa-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--lcl-olive);
+  box-shadow: 0 20px 50px rgba(40, 50, 35, 0.12);
+}
+
+.lcl-event-meta-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.lcl-event-act {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--lcl-olive);
+}
+
+.lcl-event-dress-pill {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--lcl-sage);
+  background: var(--lcl-paper-soft);
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
+.lcl-event-title {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--lcl-cypress);
+  margin: 0 0 14px;
+  line-height: 1.25;
+}
+
+.lcl-event-schedule-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  color: var(--lcl-olive);
+}
+
+.lcl-schedule-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lcl-event-venue-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--lcl-cypress);
+  margin-bottom: 14px;
+}
+
+.lcl-event-description {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--lcl-olive);
+  margin: 0 0 22px;
+}
+
+.lcl-event-map-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-radius: 100px;
+  background: var(--lcl-paper-soft);
+  border: 1px solid var(--lcl-border-olive);
+  color: var(--lcl-cypress);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.lcl-event-map-btn:hover {
+  background: var(--lcl-cypress);
+  color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. WEDDING VIDEO - EDITORIAL FILM SECTION
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-video-section {
+  background: #fbfaf5;
+}
+
+.lcl-video-canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.lcl-video-container-portrait {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 9 / 16;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--lcl-border-gold);
+  box-shadow: 0 25px 60px rgba(40, 50, 35, 0.12);
+}
+
+.lcl-video-player-element,
+.lcl-video-iframe-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 9:16 Aspect Ratio Containment in Fullscreen */
+.lcl-video-container-portrait:fullscreen,
+.lcl-video-container-portrait:-webkit-full-screen {
+  background: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+.lcl-video-container-portrait:fullscreen .lcl-video-player-element,
+.lcl-video-container-portrait:-webkit-full-screen .lcl-video-player-element {
+  width: auto !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  aspect-ratio: 9 / 16 !important;
+  object-fit: contain !important;
+  margin: auto !important;
+}
+
+.lcl-video-hud-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, transparent 0%, rgba(20, 26, 18, 0.88) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.lcl-video-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+.lcl-video-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.lcl-video-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lcl-video-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(40, 50, 35, 0.7);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lcl-video-action-btn:hover {
+  background: #ffffff;
+  color: var(--lcl-cypress);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. PHOTO GALLERY & LIGHTBOX
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-gallery-section {
+  background: var(--lcl-paper);
+}
+
+.lcl-gallery-masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.lcl-gallery-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--lcl-paper-soft);
+  border: 1px solid var(--lcl-border-subtle);
+  cursor: pointer;
+  box-shadow: 0 12px 35px rgba(40, 50, 35, 0.05);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease;
+}
+
+.lcl-gallery-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--lcl-gold);
+}
+
+.lcl-gallery-card-featured {
+  grid-column: span 2;
+  aspect-ratio: 16 / 10;
+}
+
+.lcl-gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.lcl-gallery-card:hover .lcl-gallery-img {
+  transform: scale(1.05);
+}
+
+.lcl-gallery-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 50, 35, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lcl-gallery-card:hover .lcl-gallery-overlay {
+  opacity: 1;
+}
+
+.lcl-zoom-pill {
+  padding: 6px 18px;
+  border-radius: 100px;
+  background: #ffffff;
+  color: var(--lcl-cypress);
+  font-family: var(--lcl-font-lato);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Lightbox Modal */
+.lcl-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 32, 23, 0.94);
+  backdrop-filter: blur(14px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: lclFadeIn 0.3s ease;
+}
+
+@keyframes lclFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lcl-lightbox-body {
+  position: relative;
+  max-width: 960px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lcl-lightbox-main-img {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid var(--lcl-border-gold);
+}
+
+.lcl-lightbox-close-btn {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.lcl-lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(40, 50, 35, 0.85);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lcl-lightbox-nav-btn:hover {
+  background: #ffffff;
+  color: var(--lcl-cypress);
+}
+
+.lcl-lightbox-prev { left: -22px; }
+.lcl-lightbox-next { right: -22px; }
+
+.lcl-lightbox-counter {
+  margin-top: 14px;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--lcl-champagne);
+}
+
+.lcl-lightbox-sep {
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. THE DESTINATION ("Villa Aurelia")
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-venue-section {
+  background: #fbfaf5;
+}
+
+.lcl-venue-editorial-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--lcl-border-gold);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(40, 50, 35, 0.06);
+}
+
+.lcl-venue-media-half {
+  height: 100%;
+  min-height: 400px;
+}
+
+.lcl-venue-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lcl-venue-content-half {
+  padding: 50px 44px;
+}
+
+.lcl-venue-tag {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--lcl-olive);
+  margin-bottom: 12px;
+}
+
+.lcl-venue-name {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  font-weight: 500;
+  color: var(--lcl-cypress);
+  margin: 0 0 14px;
+  line-height: 1.15;
+}
+
+.lcl-venue-desc {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--lcl-sage);
+  margin: 0 0 20px;
+}
+
+.lcl-venue-location-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.92rem;
+  color: var(--lcl-olive);
+  margin-bottom: 28px;
+}
+
+.lcl-venue-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 100px;
+  background: var(--lcl-cypress);
+  color: #ffffff;
+  font-family: var(--lcl-font-lato);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.lcl-venue-map-link:hover {
+  background: var(--lcl-olive);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9. CLOSING SECTION ("Forever Begins Here")
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-final-section {
+  padding: 120px 0 80px;
+  text-align: center;
+  background: var(--lcl-paper);
+  border-top: 1px solid var(--lcl-border-gold);
+}
+
+.lcl-final-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.lcl-final-monogram {
+  font-family: var(--lcl-font-cormorant);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--lcl-cypress);
+  margin-bottom: 16px;
+}
+
+.lcl-final-monogram em {
+  font-family: var(--lcl-font-script);
+  font-size: 2.4rem;
+  color: var(--lcl-gold);
+  margin: 0 4px;
+}
+
+.lcl-final-couple-names {
+  font-family: var(--lcl-font-cormorant);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 400;
+  color: var(--lcl-cypress);
+  margin: 0 0 12px;
+}
+
+.lcl-final-couple-names em {
+  font-family: var(--lcl-font-script);
+  font-size: 3rem;
+  color: var(--lcl-gold);
+  margin: 0 6px;
+}
+
+.lcl-final-date {
+  font-family: var(--lcl-font-cormorant);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--lcl-sage);
+  margin: 0 0 16px;
+}
+
+.lcl-final-hashtag {
+  font-family: var(--lcl-font-lato);
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lcl-olive);
+  margin-bottom: 24px;
+}
+
+.lcl-final-gratitude {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--lcl-olive);
+  margin: 0 auto 40px;
+}
+
+.lcl-final-footer-bottom {
+  border-top: 1px solid var(--lcl-border-subtle);
+  padding-top: 28px;
+  font-size: 0.72rem;
+  letter-spacing: 0.25em;
+  color: var(--lcl-sage);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN (TABLET & MOBILE)
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .lcl-venue-editorial-card {
+    grid-template-columns: 1fr;
+  }
+
+  .lcl-venue-media-half {
+    min-height: 280px;
+  }
+
+  .lcl-venue-content-half {
+    padding: 36px 24px;
+  }
+
+  .lcl-gallery-masonry-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lcl-gallery-card-featured {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .lcl-letter-card {
+    padding: 44px 20px;
+  }
+
+  .lcl-floating-controls {
+    bottom: 16px;
+    right: 16px;
+    gap: 8px;
+  }
+
+  .lcl-pill-btn {
+    padding: 8px 14px;
+    font-size: 0.7rem;
+  }
+
+  .lcl-events-cards-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .lcl-gallery-masonry-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .lcl-gallery-card-featured {
+    grid-column: span 1;
+  }
+
+  .lcl-lightbox-prev { left: 8px; }
+  .lcl-lightbox-next { right: 8px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PREFERS-REDUCED-MOTION SUPPORT
+══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .lcl-sound-wave-bars span,
+  .lcl-scroll-dot {
+    animation: none !important;
+  }
+
+  .lcl-reveal,
+  .lcl-event-villa-card,
+  .lcl-gallery-card,
+  .lcl-pill-btn {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
