@@ -55,7 +55,21 @@ export default function RoyalGold({ data = {} }) {
   const brideParentsFormatted = formatParents(data.brideParents);
   const groomParentsFormatted = formatParents(data.groomParents);
 
-  const events = Array.isArray(data.events) ? data.events : [];
+  const events = Array.isArray(data.events) && data.events.length > 0
+    ? data.events
+    : (venueName || weddingDateStr)
+      ? [
+          {
+            name: "The Wedding Celebration",
+            date: weddingDateStr,
+            time: weddingTimeStr,
+            venue: venueName,
+            address: venueAddress,
+            mapLink: googleMapsLink,
+            description: data.invitationNote || data.additionalDetails || "We look forward to celebrating this joyful moment with you."
+          }
+        ]
+      : [];
   const galleryImages = Array.isArray(data.galleryImages) ? data.galleryImages : [];
   const videoUrl = (data.videoUrl || "/templates/temple-heritage/marriage_video.mp4").trim();
 

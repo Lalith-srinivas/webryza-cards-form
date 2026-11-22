@@ -6,6 +6,7 @@ import RoyalGold from "../templates/RoyalGold";
 import TempleHeritage from "../templates/TempleHeritage";
 import ElegantPastel from "../templates/ElegantPastel";
 import LakeComoLetters from "../templates/LakeComoLetters";
+import { mapFirestoreToTemplateData } from "../utils/templateDataMapper";
 import { sampleWeddingData } from "../templates/sampleWeddingData";
 import { sampleTempleData } from "../templates/sampleTempleData";
 import { samplePastelData } from "../templates/samplePastelData";
@@ -112,51 +113,85 @@ export default function PublicInvitationPage() {
     let hadPermissionError = false;
 
     // =========================================================================
-    // 0. Instant Local Storage / Session Storage check (Zero delay for newly registered weddings)
+    // 1. Search Firestore wedding_cards (Primary Database)
     // =========================================================================
-    try {
-      if (typeof window !== "undefined") {
-        const localKey = `webryza_invitation_${weddingIdentifier}`;
-        const storedStr =
-          localStorage.getItem(localKey) ||
-          sessionStorage.getItem(localKey) ||
-          (weddingIdentifier === "WR-8999" ? localStorage.getItem("webryza_last_invitation") : null);
+    const idVariants = Array.from(
+      new Set([
+        weddingIdentifier,
+        weddingIdentifier.toUpperCase(),
+        weddingIdentifier.toLowerCase(),
+        weddingIdentifier.replace(/^WR-/i, ""),
+      ])
+    ).filter(Boolean);
 
-        if (storedStr) {
-          const parsed = JSON.parse(storedStr);
-          if (parsed && (parsed.brideName || parsed.weddingId)) {
-            docData = parsed;
-          }
+    const cardsCollection = collection(db, "wedding_cards");
+
+    for (const idVar of idVariants) {
+      if (docData) break;
+
+      // A. Direct doc lookup by ID
+      try {
+        const directRef = doc(db, "wedding_cards", idVar);
+        const directSnap = await getDoc(directRef);
+        if (directSnap.exists()) {
+          docData = { id: directSnap.id, ...directSnap.data() };
+          break;
+        }
+      } catch (err) {
+        if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
+          hadPermissionError = true;
         }
       }
-    } catch {
-      // Local storage check fallback
+
+      // B. Query where weddingId == idVar (sort by latest if multiple found)
+      try {
+        const qWeddingId = query(cardsCollection, where("weddingId", "==", idVar));
+        const snapWeddingId = await getDocs(qWeddingId);
+        if (!snapWeddingId.empty) {
+          const candidateDocs = snapWeddingId.docs.map((d) => ({ id: d.id, ...d.data() }));
+          // Prioritize most recent and complete records
+          candidateDocs.sort((a, b) => {
+            const timeA = a.createdAt?.seconds || a.updatedAt?.seconds || 0;
+            const timeB = b.createdAt?.seconds || b.updatedAt?.seconds || 0;
+            return timeB - timeA;
+          });
+          docData = candidateDocs[0];
+          break;
+        }
+      } catch (err) {
+        if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
+          hadPermissionError = true;
+        }
+      }
+
+      // C. Query where id == idVar
+      try {
+        const qId = query(cardsCollection, where("id", "==", idVar));
+        const snapId = await getDocs(qId);
+        if (!snapId.empty) {
+          docData = { id: snapId.docs[0].id, ...snapId.docs[0].data() };
+          break;
+        }
+      } catch (err) {
+        if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
+          hadPermissionError = true;
+        }
+      }
     }
 
     // =========================================================================
-    // 1. Search Firestore wedding_cards (Primary Database)
+    // 2. Search public_invitations collection (Sanitized fallback)
     // =========================================================================
     if (!docData) {
-      const idVariants = Array.from(
-        new Set([
-          weddingIdentifier,
-          weddingIdentifier.toUpperCase(),
-          weddingIdentifier.toLowerCase(),
-          weddingIdentifier.replace(/^WR-/i, ""),
-        ])
-      ).filter(Boolean);
-
-      const cardsCollection = collection(db, "wedding_cards");
-
+      const publicCollection = collection(db, "public_invitations");
       for (const idVar of idVariants) {
         if (docData) break;
 
-        // A. Direct doc lookup by ID
         try {
-          const directRef = doc(db, "wedding_cards", idVar);
-          const directSnap = await getDoc(directRef);
-          if (directSnap.exists()) {
-            docData = { id: directSnap.id, ...directSnap.data() };
+          const pubRef = doc(db, "public_invitations", idVar);
+          const pubSnap = await getDoc(pubRef);
+          if (pubSnap.exists()) {
+            docData = { id: pubSnap.id, ...pubSnap.data() };
             break;
           }
         } catch (err) {
@@ -165,134 +200,48 @@ export default function PublicInvitationPage() {
           }
         }
 
-        // B. Query where weddingId == idVar
         try {
-          const qWeddingId = query(cardsCollection, where("weddingId", "==", idVar));
-          const snapWeddingId = await getDocs(qWeddingId);
-          if (!snapWeddingId.empty) {
-            docData = { id: snapWeddingId.docs[0].id, ...snapWeddingId.docs[0].data() };
+          const qPub = query(publicCollection, where("weddingId", "==", idVar));
+          const snapPub = await getDocs(qPub);
+          if (!snapPub.empty) {
+            const candidateDocs = snapPub.docs.map((d) => ({ id: d.id, ...d.data() }));
+            candidateDocs.sort((a, b) => {
+              const timeA = a.createdAt?.seconds || a.updatedAt?.seconds || 0;
+              const timeB = b.createdAt?.seconds || b.updatedAt?.seconds || 0;
+              return timeB - timeA;
+            });
+            docData = candidateDocs[0];
             break;
           }
         } catch (err) {
           if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
             hadPermissionError = true;
-          }
-        }
-
-        // C. Query where id == idVar
-        try {
-          const qId = query(cardsCollection, where("id", "==", idVar));
-          const snapId = await getDocs(qId);
-          if (!snapId.empty) {
-            docData = { id: snapId.docs[0].id, ...snapId.docs[0].data() };
-            break;
-          }
-        } catch (err) {
-          if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
-            hadPermissionError = true;
-          }
-        }
-      }
-
-      // =========================================================================
-      // 2. Search public_invitations collection (Sanitized fallback)
-      // =========================================================================
-      if (!docData) {
-        const publicCollection = collection(db, "public_invitations");
-        for (const idVar of idVariants) {
-          if (docData) break;
-
-          try {
-            const pubRef = doc(db, "public_invitations", idVar);
-            const pubSnap = await getDoc(pubRef);
-            if (pubSnap.exists()) {
-              docData = { id: pubSnap.id, ...pubSnap.data() };
-              break;
-            }
-          } catch (err) {
-            if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
-              hadPermissionError = true;
-            }
-          }
-
-          try {
-            const qPub = query(publicCollection, where("weddingId", "==", idVar));
-            const snapPub = await getDocs(qPub);
-            if (!snapPub.empty) {
-              docData = { id: snapPub.docs[0].id, ...snapPub.docs[0].data() };
-              break;
-            }
-          } catch (err) {
-            if (err.code === "permission-denied" || err.message?.toLowerCase().includes("permission")) {
-              hadPermissionError = true;
-            }
           }
         }
       }
     }
 
     // =========================================================================
-    // 3. Known Registration Fallback (If Firestore rules block unauthenticated reads)
+    // 3. Client-side Local Storage Check (Graceful fallback if network is offline)
     // =========================================================================
-    if (!docData && (hadPermissionError || weddingIdentifier === "WR-8999" || weddingIdentifier === "WR-1691" || weddingIdentifier === "WR-3003")) {
-      // Gracefully supply the registered couple info so preview doesn't break
-      if (weddingIdentifier === "WR-8999") {
-        docData = {
-          weddingId: "WR-8999",
-          templateId: "temple-heritage",
-          brideName: "Priya",
-          groomName: "Rahul",
-          brideParents: "Srinivas & Lakshmi",
-          groomParents: "Ramesh & Sita",
-          weddingDate: "2027-02-15",
-          weddingTime: "10:30 AM",
-          venueName: "Royal Palace Convention Hall",
-          venueAddress: "Tirupati, Andhra Pradesh",
-          venueLocation: "https://maps.google.com/?q=Tirupati",
-          events: [
-            {
-              eventName: "Muhurtham & Reception",
-              date: "2027-02-15",
-              time: "10:30 AM",
-              venueName: "Royal Palace Convention Hall",
-              venueAddress: "Tirupati, AP",
-            },
-          ],
-        };
-      } else if (weddingIdentifier === "WR-1691") {
-        docData = {
-          weddingId: "WR-1691",
-          templateId: "royal-gold",
-          brideName: "Priya",
-          groomName: "Rahul",
-          brideParents: "Srinivas & Lakshmi",
-          groomParents: "Ramesh & Sita",
-          weddingDate: "2027-02-15",
-          weddingTime: "10:30 AM",
-          venueName: "Royal Palace Convention Hall",
-          venueAddress: "Tirupati, Andhra Pradesh",
-          venueLocation: "https://maps.google.com/?q=Tirupati",
-          events: sampleWeddingData.events || [],
-        };
-      } else if (weddingIdentifier === "WR-3003") {
-        docData = {
-          weddingId: "WR-3003",
-          templateId: "lakecomo-letters",
-          brideName: "Ananya",
-          groomName: "Aditya",
-          brideParents: "Dr. K. Sharma",
-          groomParents: "Mr. S. Verma",
-          weddingDate: "2027-04-18",
-          weddingTime: "06:30 PM",
-          venueName: "Lakeside Heritage Resort",
-          venueAddress: "Udaipur, Rajasthan",
-          venueLocation: "https://maps.google.com/?q=Udaipur",
-          events: sampleLakeComoData.events || [],
-        };
+    if (!docData) {
+      try {
+        if (typeof window !== "undefined") {
+          const localKey = `webryza_invitation_${weddingIdentifier}`;
+          const storedStr = localStorage.getItem(localKey) || sessionStorage.getItem(localKey);
+          if (storedStr) {
+            const parsed = JSON.parse(storedStr);
+            if (parsed && (parsed.brideName || parsed.weddingId)) {
+              docData = parsed;
+            }
+          }
+        }
+      } catch {
+        // Storage access fallback
       }
     }
 
-    // If still not found
+    // If still not found, show user-facing error without fake placeholder overrides
     if (!docData) {
       if (hadPermissionError) {
         setIsPermissionDenied(true);
@@ -308,68 +257,10 @@ export default function PublicInvitationPage() {
       return;
     }
 
-    // Determine normalized template ID
-    const rawTemplate = (docData.templateId || "royal-gold").toLowerCase().trim();
-    let normalizedTemplate = "royal-gold";
-    if (rawTemplate.includes("temple") || rawTemplate.includes("vishu") || rawTemplate.includes("heritage")) {
-      normalizedTemplate = "temple-heritage";
-    } else if (rawTemplate.includes("pastel") || rawTemplate.includes("romance")) {
-      normalizedTemplate = "elegant-pastel-romance";
-    } else if (rawTemplate.includes("lake") || rawTemplate.includes("letters") || rawTemplate.includes("como")) {
-      normalizedTemplate = "lakecomo-letters";
-    } else {
-      normalizedTemplate = "royal-gold";
-    }
+    // Centralized Data Mapping: transforms Firestore document into sanitized template payload
+    const safeWeddingPayload = mapFirestoreToTemplateData(docData, weddingIdentifier);
 
-    // Format wedding date
-    let formattedDate = "";
-    if (docData.weddingDate) {
-      if (typeof docData.weddingDate === "string") {
-        formattedDate = docData.weddingDate;
-      } else if (docData.weddingDate.toDate) {
-        const d = docData.weddingDate.toDate();
-        formattedDate = d.toISOString().split("T")[0];
-      }
-    }
-
-    // Normalize events array
-    const normalizedEvents = (docData.events || []).map((ev) => ({
-      name: ev.eventName || ev.name || "Wedding Celebration",
-      eventName: ev.eventName || ev.name || "Wedding Celebration",
-      date: ev.date || formattedDate,
-      time: ev.time || docData.weddingTime || "",
-      venue: ev.venueName || ev.venue || docData.venueName || "",
-      venueName: ev.venueName || ev.venue || docData.venueName || "",
-      address: ev.venueAddress || ev.address || docData.venueAddress || "",
-      venueAddress: ev.venueAddress || ev.address || docData.venueAddress || "",
-      mapLink: ev.locationLink || ev.mapLink || docData.venueLocation || "",
-      googleMapsLink: ev.locationLink || ev.mapLink || docData.venueLocation || "",
-      description: ev.description || "",
-    }));
-
-    // Safe sanitized payload
-    const safeWeddingPayload = {
-      weddingId: docData.weddingId || weddingIdentifier,
-      templateId: normalizedTemplate,
-      brideName: docData.brideName || "The Bride",
-      groomName: docData.groomName || "The Groom",
-      brideParents: docData.brideParents || "",
-      groomParents: docData.groomParents || "",
-      weddingDate: formattedDate,
-      weddingTime: docData.weddingTime || "",
-      venueName: docData.venueName || "",
-      venueAddress: docData.venueAddress || "",
-      googleMapsLink: docData.venueLocation || docData.googleMapsLink || "",
-      venueLocation: docData.venueLocation || "",
-      events: normalizedEvents,
-      videoUrl: docData.videoUrl || "",
-      hashtag:
-        docData.hashtag ||
-        `#${(docData.brideName || "Bride").replace(/\s+/g, "")}And${(docData.groomName || "Groom").replace(/\s+/g, "")}`,
-      additionalDetails: docData.additionalDetails || "",
-    };
-
-    setTemplateId(normalizedTemplate);
+    setTemplateId(safeWeddingPayload.templateId);
     setWeddingData(safeWeddingPayload);
     setLoading(false);
   }, [weddingIdentifier]);

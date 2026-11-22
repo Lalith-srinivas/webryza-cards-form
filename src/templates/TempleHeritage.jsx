@@ -13,9 +13,11 @@ export default function TempleHeritage({ data = {} }) {
   const groomName = (data.groomName || "Vishu").trim();
   const brideName = (data.brideName || "Kavya").trim();
   const weddingDateStr = data.weddingDate || "2026-11-02";
+  const weddingDatePretty = data.weddingDatePretty || data.weddingDateFormatted || weddingDateStr;
   const weddingTimeStr = data.weddingTime || "08:00 AM";
-  const venueName = (data.venueName || "Rambagh, Jaipur").trim();
+  const venueName = (data.venueName || "").trim();
   const venueAddress = (data.venueAddress || "").trim();
+  const googleMapsLink = data.googleMapsLink || (venueName ? `https://maps.google.com/?q=${encodeURIComponent(`${venueName} ${venueAddress}`.trim())}` : "");
 
   // Media assets
   const coupleImage = data.coupleImage || "/templates/temple-heritage/images/couple_portrait.jpg";
@@ -24,85 +26,45 @@ export default function TempleHeritage({ data = {} }) {
   const videoUrl = data.videoUrl || "/templates/temple-heritage/marriage_video.mp4";
   const audioUrl = data.audioUrl || "/templates/temple-heritage/tabala_flute.mp3";
 
-  // Parents and family formatting
-  const grandparents = Array.isArray(data.grandparents) && data.grandparents.length > 0
-    ? data.grandparents
-    : [
-      "Smt. Parvathi Ammal & Shri Krishnan Iyer",
-      "Smt. Kamakshi Ammal & Shri Srinivasan Iyer"
-    ];
+  // Parents and family formatting (Do not display dummy grandparents if not provided)
+  const grandparents = Array.isArray(data.grandparents) ? data.grandparents : [];
 
-  const formatParentText = (parentObj, defaultText) => {
+  const formatParentText = (parentObj, defaultText = "") => {
     if (!parentObj) return defaultText;
     if (typeof parentObj === "string") return parentObj.trim();
     if (typeof parentObj === "object") {
       const parts = [];
       if (parentObj.mother) parts.push(parentObj.mother.trim());
       if (parentObj.father) parts.push(parentObj.father.trim());
-      return parts.length > 0 ? parts.join(" & ") : defaultText;
+      return parts.length > 0 ? parts.join(" & ") : (parentObj.text || defaultText);
     }
     return defaultText;
   };
 
-  const brideParentsText = formatParentText(data.brideParents, "Smt. Parvathi & Shri K. Ramaswamy");
-  const groomParentsText = formatParentText(data.groomParents, "Smt. Shanthi & Shri K. Venkatachalam");
+  const brideParentsText = formatParentText(data.brideParents || data.brideParentsText, "");
+  const groomParentsText = formatParentText(data.groomParents || data.groomParentsText, "");
 
   // Events list
-  const defaultEvents = [
-    {
-      name: "Mehendi",
-      icon: "🌸",
-      date: "Friday, March 9th 2026",
-      venue: "Rambagh, Jaipur",
-      time: "6pm Onwards",
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    },
-    {
-      name: "Haldi",
-      icon: "💛",
-      date: "Friday, March 10th 2026",
-      venue: "Rambagh, Jaipur",
-      time: "10am Onwards",
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    },
-    {
-      name: "Sangeet",
-      icon: "🎶",
-      date: "Friday, March 10th 2026",
-      venue: "Rambagh, Jaipur",
-      time: "7pm Onwards",
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    },
-    {
-      name: "Engagement",
-      icon: "💍",
-      date: "Friday, March 11th 2026",
-      venue: "Rambagh, Jaipur",
-      time: "11am Onwards",
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    },
-    {
-      name: "Muhurtham",
-      icon: "🪷",
-      date: "Monday, November 2nd 2026",
-      venue: "Rambagh, Jaipur",
-      time: "8am Onwards",
-      isHighlight: true,
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    },
-    {
-      name: "Reception",
-      icon: "🎊",
-      date: "Friday, March 17th 2026",
-      venue: "Rambagh, Jaipur",
-      time: "7pm Onwards",
-      mapLink: "https://maps.google.com/?q=Rambagh+Jaipur"
-    }
-  ];
-
   const events = Array.isArray(data.events) && data.events.length > 0
     ? data.events
-    : defaultEvents;
+    : (venueName || weddingDateStr)
+      ? [
+          {
+            name: "Wedding Ceremony",
+            eventName: "Wedding Ceremony",
+            icon: "🪷",
+            date: weddingDatePretty,
+            datePretty: weddingDatePretty,
+            venue: venueName,
+            venueName: venueName,
+            address: venueAddress,
+            venueAddress: venueAddress,
+            time: weddingTimeStr,
+            isHighlight: true,
+            mapLink: googleMapsLink,
+          },
+        ]
+      : [];
 
   // --------------------------------------------------------------------------
   // 1. COUNTDOWN TIMER
@@ -484,15 +446,17 @@ export default function TempleHeritage({ data = {} }) {
             <div className="ganesha-container-emerald">
               <img src={ganeshaImage} alt="Lord Ganesha" />
             </div>
-            <div className="blessings-text-emerald">
-              <p className="blessings-label-emerald">With the heavenly blessings of</p>
-              {grandparents.map((name, i) => (
-                <React.Fragment key={i}>
-                  {i > 0 && <div className="divider-line-emerald">——</div>}
-                  <p className="family-names-emerald">{name}</p>
-                </React.Fragment>
-              ))}
-            </div>
+            {grandparents.length > 0 && (
+              <div className="blessings-text-emerald">
+                <p className="blessings-label-emerald">With the heavenly blessings of</p>
+                {grandparents.map((name, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 && <div className="divider-line-emerald">——</div>}
+                    <p className="family-names-emerald">{name}</p>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
             <div className="invite-text-emerald">
               <p className="invite-label-emerald">INVITE</p>
               <p className="invite-sub-emerald">You to join us in the wedding celebrations of</p>
@@ -502,10 +466,22 @@ export default function TempleHeritage({ data = {} }) {
               <span className="amp-emerald">&amp;</span>
               <h3 className="name-emerald">{brideName}</h3>
             </div>
-            <div className="daughter-of-emerald">
-              <p>Daughter of</p>
-              <p className="parents-name-emerald">{brideParentsText}</p>
-            </div>
+            {(groomParentsText || brideParentsText) && (
+              <div className="daughter-of-emerald" style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                {groomParentsText && (
+                  <div>
+                    <p>Son of</p>
+                    <p className="parents-name-emerald">{groomParentsText}</p>
+                  </div>
+                )}
+                {brideParentsText && (
+                  <div>
+                    <p>Daughter of</p>
+                    <p className="parents-name-emerald">{brideParentsText}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="scroll-indicator-emerald">
               <span>Scroll to explore</span>
               <div className="scroll-arrow">↓</div>
@@ -524,8 +500,14 @@ export default function TempleHeritage({ data = {} }) {
         </div>
         <div className="events-grid">
           {events.map((ev, i) => {
-            const isHighlight = ev.isHighlight || ev.name?.toLowerCase().includes("muhurtham") || ev.name?.toLowerCase().includes("wedding");
-            const mapLink = ev.mapLink || ev.locationLink || (ev.venue ? `https://maps.google.com/?q=${encodeURIComponent(ev.venue)}` : "https://maps.google.com");
+            const evName = ev.name || ev.eventName || `Ceremony ${i + 1}`;
+            const evVenue = (ev.venueName || ev.venue || venueName).trim();
+            const evAddress = (ev.venueAddress || ev.address || venueAddress).trim();
+            const evDate = ev.datePretty || ev.date || weddingDatePretty;
+            const evTime = ev.time || weddingTimeStr;
+            const isHighlight = ev.isHighlight || /muhurtham|wedding|kalyanam|shaadi|pheras|ceremony/i.test(evName);
+            const mapLink = ev.mapLink || ev.locationLink || ev.googleMapsLink || (evVenue ? `https://maps.google.com/?q=${encodeURIComponent(`${evVenue} ${evAddress}`.trim())}` : googleMapsLink);
+
             return (
               <div
                 key={i}
@@ -534,15 +516,22 @@ export default function TempleHeritage({ data = {} }) {
                 onMouseLeave={handleCardMouseLeave}
               >
                 <div className="event-icon">{ev.icon || (i % 2 === 0 ? "🌸" : "🪷")}</div>
-                <h3 className="event-name">{ev.name || `Ceremony ${i + 1}`}</h3>
+                <h3 className="event-name">{evName}</h3>
                 <div className="event-details">
-                  {ev.date && <p className="event-date">{ev.date}</p>}
-                  {ev.venue && <p className="event-venue">{ev.venue}</p>}
-                  {ev.time && <p className="event-time">{ev.time}</p>}
+                  {evDate && <p className="event-date">{evDate}</p>}
+                  {evVenue && <p className="event-venue">{evVenue}</p>}
+                  {evAddress && evAddress !== evVenue && (
+                    <p className="event-address" style={{ fontSize: "0.85rem", opacity: 0.85, marginTop: "-2px" }}>
+                      {evAddress}
+                    </p>
+                  )}
+                  {evTime && <p className="event-time">{evTime}</p>}
                 </div>
-                <a href={mapLink} target="_blank" rel="noopener noreferrer" className="route-link">
-                  See the route →
-                </a>
+                {mapLink && (
+                  <a href={mapLink} target="_blank" rel="noopener noreferrer" className="route-link">
+                    See the route →
+                  </a>
+                )}
               </div>
             );
           })}
@@ -712,7 +701,7 @@ export default function TempleHeritage({ data = {} }) {
             <span className="footer-groom">{brideName}</span>
           </div>
           <p className="footer-date">
-            {weddingDateStr} · {venueName}
+            {weddingDatePretty || weddingDateStr}{venueName ? ` · ${venueName}` : ""}
           </p>
           <div className="footer-divider" />
           <p className="footer-thankyou">We look forward to celebrating with you!</p>

@@ -28,14 +28,15 @@ import "./ElegantPastel.css";
  * @param {Object} props.data - Dynamic wedding data payload conforming to schema
  */
 export default function ElegantPastel({ data = {} }) {
-  // Safe field extractions with elegant fallbacks
+  // Safe field extractions
   const brideName = (data.brideName || "Ananya").trim();
   const groomName = (data.groomName || "Arjun").trim();
   const weddingDateStr = data.weddingDate || "2027-03-20";
+  const weddingDatePretty = data.weddingDatePretty || data.weddingDateFormatted || weddingDateStr;
   const weddingTimeStr = data.weddingTime || "10:30 AM";
-  const venueName = (data.venueName || "The Grand Rosewood Pavilion").trim();
-  const venueAddress = (data.venueAddress || "Alipiri Foothills Road, Tirupati, Andhra Pradesh").trim();
-  const googleMapsLink = data.googleMapsLink || (venueAddress ? `https://maps.google.com/?q=${encodeURIComponent(`${venueName} ${venueAddress}`)}` : "");
+  const venueName = (data.venueName || "").trim();
+  const venueAddress = (data.venueAddress || "").trim();
+  const googleMapsLink = data.googleMapsLink || (venueName ? `https://maps.google.com/?q=${encodeURIComponent(`${venueName} ${venueAddress}`.trim())}` : "");
 
   // Parent normalization
   const formatParents = (parents) => {
@@ -59,10 +60,10 @@ export default function ElegantPastel({ data = {} }) {
   const groomImage = data.groomImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=85";
   const venueImage = data.venueImage || "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=85";
 
-  // Descriptions
-  const brideDescription = (data.brideDescription || data.brideBio || "Architect, contemporary artist, and lover of timeless literature whose gentle warmth and radiant laughter illuminate every room.").trim();
-  const groomDescription = (data.groomDescription || data.groomBio || "Creative director, classical pianist, and avid mountaineer whose steady presence and deep kindness bring tranquility to every heartbeat.").trim();
-  const invitationNote = (data.invitationNote || "With profound gratitude for the love that has guided our paths and the cherished blessings of our families, we joyfully invite you to celebrate the beginning of our new chapter together.").trim();
+  // Descriptions (Do not display hardcoded dummy architect/pianist bios if not provided)
+  const brideDescription = (data.brideDescription || data.brideBio || "").trim();
+  const groomDescription = (data.groomDescription || data.groomBio || "").trim();
+  const invitationNote = (data.invitationNote || data.additionalDetails || "").trim();
 
   // Arrays
   const galleryImages = Array.isArray(data.galleryImages) && data.galleryImages.length > 0
@@ -77,7 +78,22 @@ export default function ElegantPastel({ data = {} }) {
         "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1000&q=80"
       ];
 
-  const events = Array.isArray(data.events) ? data.events : [];
+  const events = Array.isArray(data.events) && data.events.length > 0
+    ? data.events
+    : (venueName || weddingDateStr)
+      ? [
+          {
+            name: "The Wedding Ceremony & Reception",
+            date: weddingDateStr,
+            time: weddingTimeStr,
+            venue: venueName,
+            address: venueAddress,
+            mapLink: googleMapsLink,
+            dressCode: "Pastel Festive or Formal",
+            description: invitationNote || "A celebration of eternal love and togetherness."
+          }
+        ]
+      : [];
   const videoUrl = (data.videoUrl || "").trim();
 
   // UI Interactive States

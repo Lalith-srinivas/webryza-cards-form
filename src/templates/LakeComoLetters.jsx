@@ -38,15 +38,16 @@ gsap.registerPlugin(ScrollTrigger);
  * @param {Object} props.data - Dynamic wedding data payload conforming to schema
  */
 export default function LakeComoLetters({ data = {} }) {
-  // Safe field extractions with Indian Lake Como fallbacks
+  // Safe field extractions
   const brideName = (data.brideName || "Ananya").trim();
   const groomName = (data.groomName || "Kabir").trim();
   const weddingDateStr = data.weddingDate || "2027-09-12";
+  const weddingDatePretty = data.weddingDatePretty || data.weddingDateFormatted || weddingDateStr;
   const weddingTimeStr = data.weddingTime || "04:30 PM";
-  const venueName = (data.venueName || "Villa Aurelia").trim();
-  const venueAddress = (data.venueAddress || "Via Regina 42, Bellagio, Lake Como, Italy").trim();
-  const googleMapsLink = data.googleMapsLink || (venueAddress ? `https://maps.google.com/?q=${encodeURIComponent(`${venueName} ${venueAddress}`)}` : "");
-  const hashtag = (data.hashtag || `#${brideName}And${groomName}2027`).replace(/\s+/g, "");
+  const venueName = (data.venueName || "").trim();
+  const venueAddress = (data.venueAddress || "").trim();
+  const googleMapsLink = data.googleMapsLink || (venueName ? `https://maps.google.com/?q=${encodeURIComponent(`${venueName} ${venueAddress}`.trim())}` : "");
+  const hashtag = (data.hashtag || `#${brideName}And${groomName}`).replace(/\s+/g, "");
 
   // Parent normalization
   const formatParents = (parents) => {
@@ -66,73 +67,28 @@ export default function LakeComoLetters({ data = {} }) {
 
   // Photographs & Descriptions
   const venueImage = data.venueImage || "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=85";
-  const invitationNote = (data.invitationNote || "On the shores of Lake Como, beneath the cypress trees, we will say ‘I do’. Join us for an unforgettable weekend of love, laughter, and la dolce vita.").trim();
+  const invitationNote = (data.invitationNote || data.additionalDetails || "").trim();
 
-  // Story Chapters
-  const storyChapters = Array.isArray(data.story) && data.story.length > 0
-    ? data.story
-    : [
-        {
-          year: "2019",
-          chapter: "01",
-          title: "How we met",
-          description: "A spilled espresso in a Milan café and an apology that turned into a three-hour conversation."
-        },
-        {
-          year: "2021",
-          chapter: "02",
-          title: "The first trip",
-          description: "A sun-drenched summer along the Amalfi coast that neither of us ever wanted to end."
-        },
-        {
-          year: "2024",
-          chapter: "03",
-          title: "The proposal",
-          description: "At golden hour on the quiet waters of Lake Como, the ring that changed everything."
-        },
-        {
-          year: "2027",
-          chapter: "04",
-          title: "Forever begins",
-          description: "The day we gather our closest family and friends beneath the cypress trees to say ‘I do’."
-        }
-      ];
+  // Story Chapters (Only render if provided by customer; do not invent fake chapters)
+  const storyChapters = Array.isArray(data.story) ? data.story : [];
 
-  // Events
+  // Events (Dynamic customer events or fallback to primary ceremony)
   const events = Array.isArray(data.events) && data.events.length > 0
     ? data.events
-    : [
-        {
-          name: "The Welcome Soirée & Haldi",
-          date: "2027-09-10",
-          time: "11:00 AM – 02:00 PM",
-          venue: "Terrazza del Lago",
-          address: "Bellagio, Lake Como",
-          mapLink: googleMapsLink,
-          dressCode: "Yellow, Ivory or Mediterranean Floral",
-          description: "A sunlit morning of turmeric blessings, fresh flowers, and family toasts overlooking the lake."
-        },
-        {
-          name: "The Sunset Cocktail & Music",
-          date: "2027-09-11",
-          time: "06:30 PM Onwards",
-          venue: "Giardino degli Ulivi",
-          address: "Villa Aurelia, Lake Como",
-          mapLink: googleMapsLink,
-          dressCode: "Italian Riviera Chic",
-          description: "Aperitivo hour, live acoustic jazz, and an evening under the twinkling fairy lights."
-        },
-        {
-          name: "The Wedding Ceremony & Reception",
-          date: weddingDateStr,
-          time: weddingTimeStr,
-          venue: venueName,
-          address: venueAddress,
-          mapLink: googleMapsLink,
-          dressCode: "Formal Black Tie or Elegant Festive",
-          description: "Exchange of vows under the cypress trees followed by a lakeside candlelit banquet and dancing under the stars."
-        }
-      ];
+    : (venueName || weddingDateStr)
+      ? [
+          {
+            name: "The Wedding Ceremony & Reception",
+            date: weddingDateStr,
+            time: weddingTimeStr,
+            venue: venueName,
+            address: venueAddress,
+            mapLink: googleMapsLink,
+            dressCode: "Formal or Festive Elegant",
+            description: invitationNote || "Exchange of vows followed by a joyous banquet celebration with family and friends."
+          }
+        ]
+      : [];
 
   // Gallery
   const galleryImages = Array.isArray(data.galleryImages) && data.galleryImages.length > 0
@@ -971,7 +927,9 @@ export default function LakeComoLetters({ data = {} }) {
               <div className="lcl-venue-content-half">
                 <p className="lcl-venue-tag">THE DESTINATION</p>
                 <h2 className="lcl-venue-name">{venueName}</h2>
-                <p className="lcl-venue-desc">A lakeside villa with terraced gardens over Lake Como.</p>
+                <p className="lcl-venue-desc">
+                  {data.additionalDetails || (venueAddress ? `Celebration venue at ${venueAddress}` : "We look forward to celebrating our special day with you.")}
+                </p>
                 
                 {venueAddress && (
                   <p className="lcl-venue-location-row">
