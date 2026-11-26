@@ -8,6 +8,7 @@ import StepCoupleDetails from "../components/StepCoupleDetails";
 import StepWeddingDetails from "../components/StepWeddingDetails";
 import StepEvents from "../components/StepEvents";
 import StepPackagePricing from "../components/StepPackagePricing";
+import StepPayment from "../components/StepPayment";
 import StepReview from "../components/StepReview";
 import SuccessModal from "../components/SuccessModal";
 import PartnerLoginFloatingButton from "../components/PartnerLoginFloatingButton";
@@ -46,22 +47,23 @@ function FormContent() {
           </div>
         )}
 
-        {/* 6 Steps Form Workflow */}
+        {/* 7 Steps Form Workflow */}
         {step === 1 && <StepTemplateSelection />}
         {step === 2 && <StepCoupleDetails />}
         {step === 3 && <StepWeddingDetails />}
         {step === 4 && <StepEvents />}
         {step === 5 && <StepPackagePricing />}
-        {step === 6 && <StepReview />}
+        {step === 6 && <StepPayment />}
+        {step === 7 && <StepReview />}
 
-        {/* Step Navigation Controls (Steps 1 to 5) */}
-        {step < 6 && (
+        {/* Step Navigation Controls (Steps 1 to 6) */}
+        {step < 7 && (
           <div className="mt-8 pt-5 border-t border-[#EEDEB3]/50 flex items-center justify-between">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={prevStep}
-                className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-[#EEDEB3] bg-white text-xs font-semibold text-[#25201A] hover:bg-[#FAF0D7] transition-all"
+                className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-[#EEDEB3] bg-white text-xs font-semibold text-[#25201A] hover:bg-[#FAF0D7] transition-all cursor-pointer"
               >
                 <ChevronLeft size={16} />
                 <span>Previous</span>
@@ -73,13 +75,15 @@ function FormContent() {
             <button
               type="button"
               onClick={nextStep}
-              className="inline-flex items-center space-x-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all"
+              className="inline-flex items-center space-x-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-bold shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer"
             >
               <span>
                 {step === 1
                   ? "Continue with Selected Template"
                   : step === 5
-                  ? "Proceed to Review"
+                  ? "Proceed to UPI Payment"
+                  : step === 6
+                  ? "Proceed to Final Review"
                   : "Next Step"}
               </span>
               <ChevronRight size={16} />

@@ -98,6 +98,25 @@ export async function submitRegistration(formData, partnerInfo) {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://cards.webryza.in";
   const websiteUrl = `${baseUrl}/card=${weddingId}`;
 
+  // Structured payment details
+  const paymentRecord = {
+    amount: commissions.amountCharged,
+    currency: "INR",
+    upiIdUsed: (formData.payment?.upiIdUsed || "").trim() || "webryza@upi",
+    upiDisplayNameUsed: (formData.payment?.upiDisplayNameUsed || "").trim() || "WebRyza",
+    transactionReference: (formData.payment?.transactionReference || "").trim(),
+    paymentProof: {
+      cloudinaryPublicId: formData.payment?.paymentProof?.cloudinaryPublicId || "",
+      resourceType: formData.payment?.paymentProof?.resourceType || "image",
+      uploadedAt: formData.payment?.paymentProof?.uploadedAt || serverTimestamp(),
+      fileFormat: formData.payment?.paymentProof?.fileFormat || "jpg",
+      originalFileName: formData.payment?.paymentProof?.originalFileName || "",
+      url: formData.payment?.paymentProof?.url || "",
+    },
+    status: "Verification Pending",
+    submittedAt: serverTimestamp(),
+  };
+
   // Complete private record for wedding_cards (Internal / Partner / Admin)
   const registrationPayload = {
     weddingId: weddingId,
@@ -140,6 +159,7 @@ export async function submitRegistration(formData, partnerInfo) {
     amountDueToWebryza: commissions.amountDueToWebryza,
     status: "confirmed",
     paymentStatus: "pending",
+    payment: paymentRecord,
     adminNotes: "",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

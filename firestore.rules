@@ -120,5 +120,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
       allow read: if isPartnerRecordOwner(resource.data.partnerId);
     }
+
+    // ==================================================
+    // 8. Application Settings (Active Payment Config)
+    // ==================================================
+    match /app_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

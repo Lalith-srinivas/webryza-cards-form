@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Store,
   ExternalLink,
+  CreditCard,
 } from "lucide-react";
 import { formatINR, formatDatePretty } from "../utils/formatters";
 import { TEMPLATES } from "./StepTemplateSelection";
@@ -49,7 +50,7 @@ export default function StepReview() {
           </div>
           <div>
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#25201A]">
-              Step 6: Review & Generate Website
+              Step 7: Final Review &amp; Generate Website
             </h2>
             <p className="text-xs text-[#665C51]">
               Please double check all wedding details before publishing your website
@@ -380,6 +381,82 @@ export default function StepReview() {
               <span className="text-[10px] text-[#8B6E32] block">
                 Inclusive of complete digital setup & hosting
               </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 5: UPI Payment & Verification */}
+        <div className="bg-white/90 rounded-2xl p-4 border border-[#EEDEB3]/70 shadow-xs">
+          <div className="flex items-center justify-between border-b border-[#EEDEB3]/40 pb-2 mb-3">
+            <div className="flex items-center space-x-2">
+              <CreditCard size={16} className="text-[#93611D]" />
+              <h3 className="font-serif text-base font-bold text-[#25201A]">
+                UPI Payment &amp; Verification
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => goToStep(6)}
+              className="inline-flex items-center space-x-1 text-xs text-[#8B6E32] hover:text-[#93611D] font-medium cursor-pointer"
+            >
+              <Edit2 size={13} />
+              <span>Edit</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Amount & Verification Pending */}
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EEDEB3]/50 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[#8B6E32] text-[11px] font-medium">Payment Status</span>
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  <Clock size={11} />
+                  <span>Payment Verification Pending</span>
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] text-[#665C51] block">Paid Amount:</span>
+                <span className="font-serif text-base font-bold text-[#93611D]">
+                  {formatINR(formData.amountCharged)}
+                </span>
+              </div>
+              <div className="pt-1 border-t border-[#EEDEB3]/40">
+                <span className="text-[10px] text-[#8B6E32] block">Paid To UPI ID:</span>
+                <span className="font-mono text-xs font-semibold text-[#25201A]">
+                  {formData.payment?.upiIdUsed || "webryza@upi"}
+                </span>
+              </div>
+            </div>
+
+            {/* UTR & Cloudinary Screenshot Thumbnail */}
+            <div className="p-3 bg-[#FCF9F0] rounded-xl border border-[#D4AF37]/40 space-y-2">
+              <div>
+                <span className="text-[#8B6E32] text-[11px] font-medium block">UPI Transaction Reference (UTR)</span>
+                <span className="font-mono text-xs font-bold text-[#25201A] block mt-0.5">
+                  {formData.payment?.transactionReference || "—"}
+                </span>
+              </div>
+
+              {formData.payment?.paymentProof?.url && (
+                <div className="pt-1 border-t border-[#D4AF37]/30 flex items-center space-x-2.5">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-[#D4AF37]/50 bg-black/5 shrink-0">
+                    <img
+                      src={formData.payment.paymentProof.url}
+                      alt="Receipt Thumbnail"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="overflow-hidden">
+                    <span className="text-[11px] font-semibold text-emerald-800 flex items-center space-x-1">
+                      <CheckCircle2 size={12} className="text-emerald-600" />
+                      <span>Receipt Uploaded</span>
+                    </span>
+                    <span className="text-[10px] text-[#665C51] block truncate max-w-[150px]">
+                      {formData.payment.paymentProof.originalFileName || "payment_screenshot.jpg"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

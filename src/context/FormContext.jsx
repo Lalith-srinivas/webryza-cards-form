@@ -9,6 +9,7 @@ import {
   validateTemplatePhotos,
   validateVideoSelection,
 } from "../utils/validation";
+import { validateUpiTransactionRef } from "../utils/upiGenerator";
 
 const FormContext = createContext(null);
 
@@ -50,6 +51,15 @@ const INITIAL_FORM_STATE = {
   videoStyle: null,
   aiVideoRequired: false,
   amountCharged: "1500",
+
+  // Step 6: Direct UPI Payment Details & Proof
+  payment: {
+    upiIdUsed: "",
+    upiDisplayNameUsed: "",
+    transactionReference: "",
+    paymentProof: null,
+    status: "Verification Pending",
+  },
 };
 
 export const FormProvider = ({ children }) => {
@@ -194,6 +204,16 @@ export const FormProvider = ({ children }) => {
       if (videoErrors.videoStyle) {
         stepErrors.videoStyle = videoErrors.videoStyle;
       }
+    } else if (stepNumber === 6) {
+      // Step 6: UPI Payment Verification
+      const utr = (formData.payment?.transactionReference || "").trim();
+      const utrErr = validateUpiTransactionRef(utr);
+      if (utrErr) {
+        stepErrors.transactionReference = utrErr;
+      }
+      if (!formData.payment?.paymentProof?.cloudinaryPublicId && !formData.payment?.paymentProof?.url) {
+        stepErrors.paymentProof = "Payment screenshot upload is mandatory to proceed.";
+      }
     }
 
     setErrors(stepErrors);
@@ -203,7 +223,7 @@ export const FormProvider = ({ children }) => {
   // Navigation handlers
   const nextStep = () => {
     if (validateCurrentStep(step)) {
-      setStep((prev) => Math.min(prev + 1, 6));
+      setStep((prev) => Math.min(prev + 1, 7));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -241,6 +261,12 @@ export const FormProvider = ({ children }) => {
     if (amountError) allErrors.amountCharged = amountError;
     const videoErrors = validateVideoSelection(formData);
     if (videoErrors.videoStyle) allErrors.videoStyle = videoErrors.videoStyle;
+    const utr = (formData.payment?.transactionReference || "").trim();
+    const utrErr = validateUpiTransactionRef(utr);
+    if (utrErr) allErrors.transactionReference = utrErr;
+    if (!formData.payment?.paymentProof?.cloudinaryPublicId && !formData.payment?.paymentProof?.url) {
+      allErrors.paymentProof = "Payment screenshot upload is mandatory.";
+    }
     if (!formData.templateId) allErrors.templateId = "Please choose a wedding template.";
 
     if (Object.keys(allErrors).length > 0) {

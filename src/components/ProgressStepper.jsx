@@ -1,6 +1,6 @@
 import React from "react";
 import { useFormContext } from "../context/FormContext";
-import { Check, Sparkles, Heart, Calendar, Music, Gift, ShieldCheck } from "lucide-react";
+import { Check, Sparkles, Heart, Calendar, Music, Gift, CreditCard, ShieldCheck } from "lucide-react";
 
 export default function ProgressStepper() {
   const { step, goToStep } = useFormContext();
@@ -11,7 +11,8 @@ export default function ProgressStepper() {
     { id: 3, title: "Wedding", icon: Calendar },
     { id: 4, title: "Events", icon: Music },
     { id: 5, title: "Package", icon: Gift },
-    { id: 6, title: "Review", icon: ShieldCheck },
+    { id: 6, title: "Payment", icon: CreditCard },
+    { id: 7, title: "Review", icon: ShieldCheck },
   ];
 
   return (

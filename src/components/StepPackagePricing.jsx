@@ -38,7 +38,7 @@ export default function StepPackagePricing() {
           </div>
         </div>
         <span className="text-xs font-semibold text-[#8B6E32] bg-[#FCF9F0] px-2.5 py-1 rounded-full border border-[#EEDEB3]">
-          Step 5 of 6
+          Step 5 of 7
         </span>
       </div>
 
