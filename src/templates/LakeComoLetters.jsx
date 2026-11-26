@@ -17,6 +17,7 @@ import {
   Play,
   Pause
 } from "lucide-react";
+import VideoPreparationCard from "../components/VideoPreparationCard";
 import "./LakeComoLetters.css";
 
 /**
@@ -99,13 +100,25 @@ export default function LakeComoLetters({ data = {} }) {
         "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=85"
       ];
 
-  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
-  const hasVideo = Boolean(
-    data.aiVideoRequired !== false &&
-    data.videoUrl &&
-    data.videoUrl.trim()
+  // Video Section Visibility & Status:
+  const hasVideoSection = Boolean(
+    data.hasVideoSection ?? (
+      data.aiVideoRequired ||
+      data.videoStatus === "pending" ||
+      data.videoStatus === "uploaded" ||
+      data.videoUrl
+    )
   );
-  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
+
+  const isVideoUploaded = Boolean(
+    data.isVideoUploaded ?? (
+      data.videoUrl &&
+      data.videoStatus !== "pending" &&
+      data.videoStatus !== "processing"
+    )
+  );
+
+  const videoUrl = isVideoUploaded ? (data.videoUrl || "").trim() : "";
 
   // UI Interactive States
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -685,9 +698,9 @@ export default function LakeComoLetters({ data = {} }) {
 
       {/* =====================================================================
           5. WEDDING VIDEO - EDITORIAL FILM SECTION
-          Rendered ONLY when video is requested and videoUrl is present!
+          Displays video player when uploaded, or VideoPreparationCard when pending.
           ===================================================================== */}
-      {Boolean(hasVideo && normalizedVideoUrl) && (
+      {Boolean(hasVideoSection) && (
         <section ref={videoSectionRef} className="lcl-section lcl-video-section relative overflow-hidden">
           <img src="/floral/vertical-gold-peony.png" alt="" className="lcl-floral-side lcl-floral-side-left" />
           <img src="/floral/vertical-gold-peony-right.png" alt="" className="lcl-floral-side lcl-floral-side-right" />
@@ -701,71 +714,79 @@ export default function LakeComoLetters({ data = {} }) {
               <h2 className="lcl-section-title">Welcome to Our Wedding Film</h2>
             </div>
 
-            <div className="lcl-video-canvas-wrapper relative">
-              <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-card-floral-tl" />
-              <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-card-floral-tr" />
-              <div className="lcl-video-container-portrait">
-                {isDirectVideo ? (
-                  <video
-                    ref={videoElementRef}
-                    src={normalizedVideoUrl}
-                    className="lcl-video-player-element"
-                    playsInline
-                    muted={isVideoMuted}
-                    loop
-                    controls
-                  />
-                ) : (
-                  <iframe
-                    ref={iframeRef}
-                    src={normalizedVideoUrl}
-                    title="Wedding Film"
-                    className="lcl-video-iframe-element"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                )}
+            {isVideoUploaded && normalizedVideoUrl ? (
+              <div className="lcl-video-canvas-wrapper relative">
+                <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-card-floral-tl" />
+                <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-card-floral-tr" />
+                <div className="lcl-video-container-portrait">
+                  {isDirectVideo ? (
+                    <video
+                      ref={videoElementRef}
+                      src={normalizedVideoUrl}
+                      className="lcl-video-player-element"
+                      playsInline
+                      muted={isVideoMuted}
+                      loop
+                      controls
+                    />
+                  ) : (
+                    <iframe
+                      ref={iframeRef}
+                      src={normalizedVideoUrl}
+                      title="Wedding Film"
+                      className="lcl-video-iframe-element"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  )}
 
-                {/* Video HUD status bar */}
-                <div className="lcl-video-hud-bar">
-                  <div className="lcl-video-status-indicator">
-                    <span className="lcl-video-status-dot" />
-                    <span>{isVideoPlaying ? "Playing wedding film" : "Automatic playback ready"}</span>
-                  </div>
+                  {/* Video HUD status bar */}
+                  <div className="lcl-video-hud-bar">
+                    <div className="lcl-video-status-indicator">
+                      <span className="lcl-video-status-dot" />
+                      <span>{isVideoPlaying ? "Playing wedding film" : "Automatic playback ready"}</span>
+                    </div>
 
-                  <div className="lcl-video-actions">
-                    {isDirectVideo && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleTogglePlayPause}
-                          className="lcl-video-action-btn"
-                          title={isVideoPlaying ? "Pause Video" : "Play Video"}
-                        >
-                          {isVideoPlaying ? <Pause size={14} /> : <Play size={14} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleToggleMute}
-                          className="lcl-video-action-btn"
-                          title={isVideoMuted ? "Unmute Audio" : "Mute Audio"}
-                        >
-                          {isVideoMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleToggleFullscreen}
-                      className="lcl-video-action-btn"
-                      title="Fullscreen 9:16 Video"
-                    >
-                      <Maximize size={14} />
-                    </button>
+                    <div className="lcl-video-actions">
+                      {isDirectVideo && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleTogglePlayPause}
+                            className="lcl-video-action-btn"
+                            title={isVideoPlaying ? "Pause Video" : "Play Video"}
+                          >
+                            {isVideoPlaying ? <Pause size={14} /> : <Play size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleToggleMute}
+                            className="lcl-video-action-btn"
+                            title={isVideoMuted ? "Unmute Audio" : "Mute Audio"}
+                          >
+                            {isVideoMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleToggleFullscreen}
+                        className="lcl-video-action-btn"
+                        title="Fullscreen 9:16 Video"
+                      >
+                        <Maximize size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <VideoPreparationCard
+                theme="lakecomo-letters"
+                brideName={brideName}
+                groomName={groomName}
+              />
+            )}
           </div>
         </section>
       )}

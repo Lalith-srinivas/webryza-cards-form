@@ -169,35 +169,107 @@ assert(normalizeTemplateId("lake-como-letters") === "lakecomo-letters", "lake-co
 assert(normalizeTemplateId("floral-botanical-romance") === "lakecomo-letters", "floral-botanical-romance normalized to lakecomo-letters");
 
 // -----------------------------------------------------------------------------
-// 6. Test AI Video Selection & Opt-Out (No Video Section when aiVideoRequired is false)
+// 6. Test Dynamic Video Workflow (Preparation Message vs Uploaded Player)
 // -----------------------------------------------------------------------------
-console.log("\nSection 6: AI Video Selection & Section Suppression");
+console.log("\nSection 6: Dynamic Video Workflow & State Transitions");
 
-// User selects "No" in form (aiVideoRequired: false)
+// Scenario 1: Customer opts out of video in registration form
 const noVideoDoc = {
-  weddingId: "WR-9999",
+  weddingId: "WR-1001",
   templateId: "royal-gold",
   brideName: "Ananya",
   groomName: "Kabir",
   aiVideoRequired: false,
-  videoUrl: "https://example.com/residual_video.mp4",
+  videoStatus: "not_requested",
+  videoUrl: "",
 };
-const mappedNoVideo = mapFirestoreToTemplateData(noVideoDoc, "WR-9999");
-assert(mappedNoVideo.aiVideoRequired === false, "aiVideoRequired is strictly false when user opts out");
-assert(mappedNoVideo.videoUrl === "", "videoUrl is cleared to empty string when user selects NO for video");
+const mappedNoVideo = mapFirestoreToTemplateData(noVideoDoc, "WR-1001");
+assert(mappedNoVideo.aiVideoRequired === false, "aiVideoRequired is false when user opts out");
+assert(mappedNoVideo.hasVideoSection === false, "hasVideoSection is false when user opts out (section hidden)");
+assert(mappedNoVideo.isVideoUploaded === false, "isVideoUploaded is false when user opts out");
+assert(mappedNoVideo.videoUrl === "", "videoUrl is empty string when user opts out");
 
-// User selects "Yes" in form (aiVideoRequired: true)
-const withVideoDoc = {
-  weddingId: "WR-9998",
+// Scenario 2: Customer completes registration with video requested (Before Admin Upload)
+const pendingVideoDoc = {
+  weddingId: "WR-1002",
   templateId: "temple-heritage",
   brideName: "Priya",
   groomName: "Rahul",
   aiVideoRequired: true,
-  videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+  videoStatus: "pending",
+  videoUrl: "",
+  videoPublicId: "",
+  videoUploadedAt: null,
 };
-const mappedWithVideo = mapFirestoreToTemplateData(withVideoDoc, "WR-9998");
-assert(mappedWithVideo.aiVideoRequired === true, "aiVideoRequired is true when user selects YES for video");
-assert(mappedWithVideo.videoUrl === "/templates/temple-heritage/marriage_video.mp4", "videoUrl is preserved when user selects YES for video");
+const mappedPending = mapFirestoreToTemplateData(pendingVideoDoc, "WR-1002");
+assert(mappedPending.hasVideoSection === true, "hasVideoSection is true when video is requested");
+assert(mappedPending.isVideoUploaded === false, "isVideoUploaded is false before admin upload (triggers preparation card)");
+assert(mappedPending.videoStatus === "pending", "videoStatus is pending before admin upload");
+assert(mappedPending.videoUrl === "", "videoUrl is empty before admin upload (no empty video player)");
+
+// Scenario 3: Admin uploads video through Admin Panel
+const uploadedVideoDoc = {
+  weddingId: "WR-1002",
+  templateId: "temple-heritage",
+  brideName: "Priya",
+  groomName: "Rahul",
+  aiVideoRequired: true,
+  videoStatus: "uploaded",
+  videoUrl: "https://res.cloudinary.com/xbffuga9/video/upload/v1795680000/webryza/weddings/priya_rahul.mp4",
+  videoPublicId: "webryza/weddings/priya_rahul",
+  videoUploadedAt: { seconds: 1795680000, nanoseconds: 0 },
+};
+const mappedUploaded = mapFirestoreToTemplateData(uploadedVideoDoc, "WR-1002");
+assert(mappedUploaded.hasVideoSection === true, "hasVideoSection remains true after upload");
+assert(mappedUploaded.isVideoUploaded === true, "isVideoUploaded is true after admin upload (triggers video player)");
+assert(mappedUploaded.videoStatus === "uploaded", "videoStatus is uploaded");
+assert(mappedUploaded.videoUrl.includes("priya_rahul.mp4"), "videoUrl contains uploaded Cloudinary MP4 URL");
+assert(mappedUploaded.videoPublicId === "webryza/weddings/priya_rahul", "videoPublicId preserved");
+
+// Scenario 4: Another wedding isolation (Wedding WR-1003 has pending video while WR-1002 is uploaded)
+const secondWeddingDoc = {
+  weddingId: "WR-1003",
+  templateId: "elegant-pastel-romance",
+  brideName: "Meera",
+  groomName: "Arjun",
+  aiVideoRequired: true,
+  videoStatus: "pending",
+  videoUrl: "",
+};
+const mappedSecond = mapFirestoreToTemplateData(secondWeddingDoc, "WR-1003");
+assert(mappedSecond.hasVideoSection === true, "Second wedding maintains its own video section");
+assert(mappedSecond.isVideoUploaded === false, "Second wedding maintains its own pending status independently");
+assert(mappedUploaded.isVideoUploaded === true, "First wedding remains uploaded independently");
+
+// Scenario 5: Admin replaces video with a newer version
+const replacedVideoDoc = {
+  ...uploadedVideoDoc,
+  videoUrl: "https://res.cloudinary.com/xbffuga9/video/upload/v1795690000/webryza/weddings/priya_rahul_v2.mp4",
+  videoPublicId: "webryza/weddings/priya_rahul_v2",
+};
+const mappedReplaced = mapFirestoreToTemplateData(replacedVideoDoc, "WR-1002");
+assert(mappedReplaced.isVideoUploaded === true, "isVideoUploaded is true for replaced video");
+assert(mappedReplaced.videoUrl.includes("priya_rahul_v2.mp4"), "videoUrl reflects the latest replaced video");
+
+// Scenario 6: Admin removes video (reverts to preparation message)
+const removedVideoDoc = {
+  ...uploadedVideoDoc,
+  videoUrl: "",
+  videoStatus: "pending",
+  videoPublicId: "",
+};
+const mappedRemoved = mapFirestoreToTemplateData(removedVideoDoc, "WR-1002");
+assert(mappedRemoved.hasVideoSection === true, "hasVideoSection remains true when video is removed");
+assert(mappedRemoved.isVideoUploaded === false, "isVideoUploaded becomes false when video is removed (reverts to preparation message)");
+assert(mappedRemoved.videoStatus === "pending", "videoStatus reverts to pending");
+assert(mappedRemoved.videoUrl === "", "videoUrl is cleared");
+
+// Scenario 7: All 4 templates support dynamic video state
+for (const tmpl of ["royal-gold", "temple-heritage", "elegant-pastel-romance", "lakecomo-letters"]) {
+  const tDoc = { weddingId: "TEST", templateId: tmpl, brideName: "A", groomName: "B", aiVideoRequired: true };
+  const mapped = mapFirestoreToTemplateData(tDoc, "TEST");
+  assert(mapped.hasVideoSection === true && mapped.isVideoUploaded === false, `Template ${tmpl} handles pending video correctly`);
+}
 
 // -----------------------------------------------------------------------------
 // Summary

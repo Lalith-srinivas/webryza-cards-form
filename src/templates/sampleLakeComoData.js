@@ -29,6 +29,7 @@ export const sampleLakeComoData = {
   invitationNote: "On the shores of Lake Como, beneath the cypress trees, we will celebrate our union. Join us for an unforgettable weekend of love, laughter, and family blessings.",
   videoUrl: "/templates/temple-heritage/marriage_video.mp4",
   aiVideoRequired: true,
+  videoStatus: "uploaded",
   hashtag: "#AnanyaAndKabir2027",
   story: [
     {

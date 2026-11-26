@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation, Link, Navigate } from "react-router-dom";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 import RoyalGold from "../templates/RoyalGold";
 import TempleHeritage from "../templates/TempleHeritage";
@@ -100,6 +100,7 @@ export default function PublicInvitationPage() {
   const [isPermissionDenied, setIsPermissionDenied] = useState(false);
   const [weddingData, setWeddingData] = useState(null);
   const [templateId, setTemplateId] = useState("royal-gold");
+  const [matchedDocRef, setMatchedDocRef] = useState(null);
 
   // Fetch wedding invitation from local storage or Firestore
   const fetchWeddingInvitation = useCallback(async () => {
@@ -139,6 +140,7 @@ export default function PublicInvitationPage() {
         const directSnap = await getDoc(directRef);
         if (directSnap.exists()) {
           docData = { id: directSnap.id, ...directSnap.data() };
+          setMatchedDocRef(directRef);
           break;
         }
       } catch (err) {
@@ -160,6 +162,7 @@ export default function PublicInvitationPage() {
             return timeB - timeA;
           });
           docData = candidateDocs[0];
+          setMatchedDocRef(doc(db, "wedding_cards", candidateDocs[0].id));
           break;
         }
       } catch (err) {
@@ -174,6 +177,7 @@ export default function PublicInvitationPage() {
         const snapId = await getDocs(qId);
         if (!snapId.empty) {
           docData = { id: snapId.docs[0].id, ...snapId.docs[0].data() };
+          setMatchedDocRef(doc(db, "wedding_cards", snapId.docs[0].id));
           break;
         }
       } catch (err) {
@@ -196,6 +200,7 @@ export default function PublicInvitationPage() {
           const pubSnap = await getDoc(pubRef);
           if (pubSnap.exists()) {
             docData = { id: pubSnap.id, ...pubSnap.data() };
+            setMatchedDocRef(pubRef);
             break;
           }
         } catch (err) {
@@ -215,6 +220,7 @@ export default function PublicInvitationPage() {
               return timeB - timeA;
             });
             docData = candidateDocs[0];
+            setMatchedDocRef(doc(db, "public_invitations", candidateDocs[0].id));
             break;
           }
         } catch (err) {
@@ -274,6 +280,30 @@ export default function PublicInvitationPage() {
       fetchWeddingInvitation();
     }
   }, [isCardUrl, fetchWeddingInvitation]);
+
+  // Real-time listener: updates wedding data instantly when admin uploads/replaces/removes video
+  useEffect(() => {
+    if (!matchedDocRef) return;
+
+    const unsubscribe = onSnapshot(
+      matchedDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const freshData = { id: snapshot.id, ...snapshot.data() };
+          const safePayload = mapFirestoreToTemplateData(freshData, weddingIdentifier);
+          setWeddingData(safePayload);
+          setTemplateId(safePayload.templateId);
+        }
+      },
+      (err) => {
+        console.warn("Real-time Firestore video sync notice:", err);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [matchedDocRef, weddingIdentifier]);
 
   // Scroll to top when invitation or template changes
   useEffect(() => {

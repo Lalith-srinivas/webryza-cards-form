@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import VideoPreparationCard from "../components/VideoPreparationCard";
 import "./TempleHeritage.css";
 
 /**
@@ -23,13 +24,25 @@ export default function TempleHeritage({ data = {} }) {
   const coupleImage = data.coupleImage || "/templates/temple-heritage/images/couple_portrait.jpg";
   const ganeshaImage = data.ganeshaImage || "/templates/temple-heritage/images/ganesha_motif.jpg";
   const templeBgImage = data.templeBgImage || "/templates/temple-heritage/images/temple_hero_bg.jpg";
-  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
-  const hasVideo = Boolean(
-    data.aiVideoRequired !== false &&
-    data.videoUrl &&
-    data.videoUrl.trim()
+  // Video Section Visibility & Status:
+  const hasVideoSection = Boolean(
+    data.hasVideoSection ?? (
+      data.aiVideoRequired ||
+      data.videoStatus === "pending" ||
+      data.videoStatus === "uploaded" ||
+      data.videoUrl
+    )
   );
-  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
+
+  const isVideoUploaded = Boolean(
+    data.isVideoUploaded ?? (
+      data.videoUrl &&
+      data.videoStatus !== "pending" &&
+      data.videoStatus !== "processing"
+    )
+  );
+
+  const videoUrl = isVideoUploaded ? (data.videoUrl || "").trim() : "";
   const audioUrl = data.audioUrl || "/templates/temple-heritage/tabala_flute.mp3";
 
   // Parents and family formatting (Do not display dummy grandparents if not provided)
@@ -578,83 +591,91 @@ export default function TempleHeritage({ data = {} }) {
            SECTION 4: INLINE WEDDING VIDEO
            (Replaces "Follow the action" & Floating Video Button)
            Auto-plays when entering view, pauses on scroll away, resumes where stopped!
-           Rendered ONLY when video is requested and videoUrl is present!
+           Displays VideoPreparationCard when video is pending upload.
       ═══════════════════════════════════════════ */}
-      {Boolean(hasVideo && embedVideoUrl) && (
+      {Boolean(hasVideoSection) && (
         <section ref={videoSectionRef} className="th-video-section" id="wedding-video">
           <div className="th-video-header">
             <p className="th-video-subtitle">A Special Welcome Message</p>
             <h2 className="th-video-title">Welcome to our <em>wedding</em></h2>
           </div>
 
-          <div className="th-video-container">
-            <div className="th-video-wrapper">
-              {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
-                <>
-                  <video
-                    ref={videoElementRef}
-                    playsInline
-                    autoPlay
-                    muted={isVideoMuted}
-                    controls
-                    className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
-                    style={
-                      isFullscreen
-                        ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
-                        : {}
-                    }
-                  >
-                    <source src={embedVideoUrl} type="video/mp4" />
-                    Your browser does not support playing this video format.
-                  </video>
-                  <div className="th-video-top-controls">
-                    <button
-                      type="button"
-                      className="th-video-fs-btn"
-                      onClick={handleToggleFullscreen}
-                      title="Fullscreen 9:16 Video"
+          {isVideoUploaded && embedVideoUrl ? (
+            <div className="th-video-container">
+              <div className="th-video-wrapper">
+                {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
+                  <>
+                    <video
+                      ref={videoElementRef}
+                      playsInline
+                      autoPlay
+                      muted={isVideoMuted}
+                      controls
+                      className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
+                      style={
+                        isFullscreen
+                          ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
+                          : {}
+                      }
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                      </svg>
-                      <span>Fullscreen</span>
-                    </button>
-                    {isVideoMuted && (
+                      <source src={embedVideoUrl} type="video/mp4" />
+                      Your browser does not support playing this video format.
+                    </video>
+                    <div className="th-video-top-controls">
                       <button
                         type="button"
-                        className="th-video-sound-pill"
-                        onClick={() => {
-                          setIsVideoMuted(false);
-                          if (videoElementRef.current) {
-                            videoElementRef.current.muted = false;
-                          }
-                        }}
+                        className="th-video-fs-btn"
+                        onClick={handleToggleFullscreen}
+                        title="Fullscreen 9:16 Video"
                       >
-                        <span>🔊 Tap for Sound</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                        </svg>
+                        <span>Fullscreen</span>
                       </button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <iframe
-                  ref={iframeRef}
-                  src={embedVideoUrl}
-                  title="Wedding Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              )}
-            </div>
+                      {isVideoMuted && (
+                        <button
+                          type="button"
+                          className="th-video-sound-pill"
+                          onClick={() => {
+                            setIsVideoMuted(false);
+                            if (videoElementRef.current) {
+                              videoElementRef.current.muted = false;
+                            }
+                          }}
+                        >
+                          <span>🔊 Tap for Sound</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <iframe
+                    ref={iframeRef}
+                    src={embedVideoUrl}
+                    title="Wedding Video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                )}
+              </div>
 
-            {/* Smart Scroll Playback Status Bar */}
-            <div className="th-video-status-indicator">
-              <span>
-                <span className={`th-video-dot ${isVideoPlaying ? "active" : "paused"}`} />
-                {isVideoPlaying ? "Playing welcome video" : "Paused • Resumes as you scroll"}
-              </span>
-              <span>Automatic scroll playback active</span>
+              {/* Smart Scroll Playback Status Bar */}
+              <div className="th-video-status-indicator">
+                <span>
+                  <span className={`th-video-dot ${isVideoPlaying ? "active" : "paused"}`} />
+                  {isVideoPlaying ? "Playing welcome video" : "Paused • Resumes as you scroll"}
+                </span>
+                <span>Automatic scroll playback active</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <VideoPreparationCard
+              theme="temple-heritage"
+              brideName={brideName}
+              groomName={groomName}
+            />
+          )}
         </section>
       )}
 

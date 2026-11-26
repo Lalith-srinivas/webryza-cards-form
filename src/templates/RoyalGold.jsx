@@ -20,6 +20,7 @@ import {
   Play,
   Maximize
 } from "lucide-react";
+import VideoPreparationCard from "../components/VideoPreparationCard";
 import "./RoyalGold.css";
 
 /**
@@ -71,13 +72,27 @@ export default function RoyalGold({ data = {} }) {
         ]
       : [];
   const galleryImages = Array.isArray(data.galleryImages) ? data.galleryImages : [];
-  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
-  const hasVideo = Boolean(
-    data.aiVideoRequired !== false &&
-    data.videoUrl &&
-    data.videoUrl.trim()
+  // Video Section Visibility & Status:
+  // hasVideoSection is true if customer requested video or admin assigned a video
+  const hasVideoSection = Boolean(
+    data.hasVideoSection ?? (
+      data.aiVideoRequired ||
+      data.videoStatus === "pending" ||
+      data.videoStatus === "uploaded" ||
+      data.videoUrl
+    )
   );
-  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
+
+  // isVideoUploaded is true when actual videoUrl exists and status is uploaded (not pending)
+  const isVideoUploaded = Boolean(
+    data.isVideoUploaded ?? (
+      data.videoUrl &&
+      data.videoStatus !== "pending" &&
+      data.videoStatus !== "processing"
+    )
+  );
+
+  const videoUrl = isVideoUploaded ? (data.videoUrl || "").trim() : "";
 
   // State: Lightbox modal
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -799,9 +814,8 @@ export default function RoyalGold({ data = {} }) {
 
       {/* =====================================================================
           6. WELCOME VIDEO / AI INVITATION SECTION (AUTOPLAY & RESUME ON SCROLL)
-          Rendered ONLY when video is requested and videoUrl is present!
           ===================================================================== */}
-      {Boolean(hasVideo && embedVideoUrl) && (
+      {Boolean(hasVideoSection) && (
         <section ref={videoSectionRef} className="py-20 px-4 max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-12">
             <p className="text-xs uppercase tracking-[0.3em] text-[#8B6514] font-bold mb-2">
@@ -816,76 +830,88 @@ export default function RoyalGold({ data = {} }) {
             <div className="h-0.5 w-16 bg-[#C5A059] mx-auto mt-4" />
           </div>
 
-          <div className="rg-video-container-9-16">
-            <div className="rg-palace-card p-3 sm:p-5 overflow-hidden">
-              <div className="rg-video-wrapper-9-16">
-                {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
-                  <>
-                    <video
-                      ref={videoElementRef}
-                      playsInline
-                      autoPlay
-                      muted={isVideoMuted}
-                      controls
-                      className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
-                      style={
-                        isFullscreen
-                          ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
-                          : {}
-                      }
-                    >
-                      <source src={embedVideoUrl} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                    <div className="rg-video-top-controls">
-                      <button
-                        type="button"
-                        onClick={handleToggleFullscreen}
-                        className="rg-video-fs-btn"
-                        title="Fullscreen 9:16 Video"
+          {isVideoUploaded && embedVideoUrl ? (
+            <div className="rg-video-container-9-16">
+              <div className="rg-palace-card p-3 sm:p-5 overflow-hidden">
+                <div className="rg-video-wrapper-9-16">
+                  {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
+                    <>
+                      <video
+                        ref={videoElementRef}
+                        playsInline
+                        autoPlay
+                        muted={isVideoMuted}
+                        controls
+                        className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
+                        style={
+                          isFullscreen
+                            ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
+                            : {}
+                        }
                       >
-                        <Maximize size={13} />
-                        <span>Fullscreen</span>
-                      </button>
-                      {isVideoMuted && (
+                        <source src={embedVideoUrl} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                      <div className="rg-video-top-controls">
                         <button
                           type="button"
-                          onClick={() => {
-                            setIsVideoMuted(false);
-                            if (videoElementRef.current) {
-                              videoElementRef.current.muted = false;
-                            }
-                          }}
-                          className="rg-video-sound-pill"
+                          onClick={handleToggleFullscreen}
+                          className="rg-video-fs-btn"
+                          title="Fullscreen 9:16 Video"
                         >
-                          <VolumeX size={14} className="text-[#D4AF37]" />
-                          <span>Tap for Sound</span>
+                          <Maximize size={13} />
+                          <span>Fullscreen</span>
                         </button>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <iframe
-                    ref={iframeRef}
-                    src={embedVideoUrl}
-                    title="Welcome To Our Wedding"
-                    className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                )}
-              </div>
+                        {isVideoMuted && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsVideoMuted(false);
+                              if (videoElementRef.current) {
+                                videoElementRef.current.muted = false;
+                              }
+                            }}
+                            className="rg-video-sound-pill"
+                          >
+                            <VolumeX size={14} className="text-[#D4AF37]" />
+                            <span>Tap for Sound</span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <iframe
+                      ref={iframeRef}
+                      src={embedVideoUrl}
+                      title="Welcome To Our Wedding"
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
 
-              {/* Smart Scroll Playback Status Indicator */}
-              <div className="mt-3 flex items-center justify-between px-1 text-[11px] text-[#8B6514]">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <span className={`w-2 h-2 rounded-full transition-colors ${isVideoPlaying ? "bg-emerald-500 animate-pulse" : "bg-[#8B6514]/60"}`} />
-                  <span>{isVideoPlaying ? "Playing welcome video" : "Paused • Resumes as you scroll"}</span>
-                </span>
-                <span className="text-[#5C5247] hidden sm:inline text-[10px]">Auto-scroll active</span>
+                {/* Smart Scroll Playback Status Indicator */}
+                <div className="mt-3 flex items-center justify-between px-1 text-[11px] text-[#8B6514]">
+                  <span className="flex items-center space-x-1.5">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isVideoPlaying ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
+                      }`}
+                    />
+                    <span>{isVideoPlaying ? "Playing wedding invitation" : "Paused on scroll"}</span>
+                  </span>
+                  <span className="text-[10px] opacity-75">9:16 Cinematic Video</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <VideoPreparationCard
+              theme="royal-gold"
+              brideName={brideName}
+              groomName={groomName}
+            />
+          )}
         </section>
       )}
 

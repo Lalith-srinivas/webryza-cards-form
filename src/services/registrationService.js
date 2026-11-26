@@ -122,7 +122,10 @@ export async function submitRegistration(formData, partnerInfo) {
     events: formattedEvents,
     aiVideoRequired: Boolean(formData.aiVideoRequired),
     aiVideoStatus: formData.aiVideoRequired ? "pending" : "not_requested",
+    videoStatus: formData.aiVideoRequired ? "pending" : "not_requested",
     videoUrl: "",
+    videoPublicId: "",
+    videoUploadedAt: null,
     websiteUrl: websiteUrl,
     websiteStatus: "published",
     partnerId: partnerId,
@@ -163,6 +166,11 @@ export async function submitRegistration(formData, partnerInfo) {
     galleryImages: galleryList,
     images: structuredImages,
     videoUrl: "",
+    videoStatus: formData.aiVideoRequired ? "pending" : "not_requested",
+    videoPublicId: "",
+    videoUploadedAt: null,
+    aiVideoRequired: Boolean(formData.aiVideoRequired),
+    aiVideoStatus: formData.aiVideoRequired ? "pending" : "not_requested",
     websiteStatus: "published",
   };
 

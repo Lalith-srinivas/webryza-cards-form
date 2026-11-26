@@ -18,6 +18,7 @@ import {
   Compass,
   Check
 } from "lucide-react";
+import VideoPreparationCard from "../components/VideoPreparationCard";
 import "./ElegantPastel.css";
 
 /**
@@ -94,13 +95,25 @@ export default function ElegantPastel({ data = {} }) {
           }
         ]
       : [];
-  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
-  const hasVideo = Boolean(
-    data.aiVideoRequired !== false &&
-    data.videoUrl &&
-    data.videoUrl.trim()
+  // Video Section Visibility & Status:
+  const hasVideoSection = Boolean(
+    data.hasVideoSection ?? (
+      data.aiVideoRequired ||
+      data.videoStatus === "pending" ||
+      data.videoStatus === "uploaded" ||
+      data.videoUrl
+    )
   );
-  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
+
+  const isVideoUploaded = Boolean(
+    data.isVideoUploaded ?? (
+      data.videoUrl &&
+      data.videoStatus !== "pending" &&
+      data.videoStatus !== "processing"
+    )
+  );
+
+  const videoUrl = isVideoUploaded ? (data.videoUrl || "").trim() : "";
 
   // UI Interactive States
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -828,9 +841,9 @@ export default function ElegantPastel({ data = {} }) {
 
       {/* =====================================================================
           7. WEDDING VIDEO (STRICT 9:16 VERTICAL CANVAS & SCROLL PLAYBACK)
-          Rendered ONLY when video is requested and videoUrl is present!
+          Displays video player when uploaded, or VideoPreparationCard when pending.
           ===================================================================== */}
-      {Boolean(hasVideo && embedVideoUrl) && (
+      {Boolean(hasVideoSection) && (
         <section ref={videoSectionRef} className="ep-section" id="video">
           <div className="ep-container-narrow">
             <div className="text-center max-w-xl mx-auto mb-8">
@@ -844,75 +857,83 @@ export default function ElegantPastel({ data = {} }) {
               </div>
             </div>
 
-            <div className="ep-video-container-9-16">
-              <div className="ep-video-card-frame">
-                <div className="ep-video-wrapper-9-16">
-                  {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
-                    <>
-                      <video
-                        ref={videoElementRef}
-                        playsInline
-                        autoPlay
-                        muted={isVideoMuted}
-                        controls
-                        className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
-                        style={
-                          isFullscreen
-                            ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
-                            : {}
-                        }
-                      >
-                        <source src={embedVideoUrl} type="video/mp4" />
-                        Your browser does not support playing this video format.
-                      </video>
-                      <div className="ep-video-top-controls">
-                        <button
-                          type="button"
-                          onClick={handleToggleFullscreen}
-                          className="ep-video-fs-btn"
-                          title="Fullscreen 9:16 Video"
+            {isVideoUploaded && embedVideoUrl ? (
+              <div className="ep-video-container-9-16">
+                <div className="ep-video-card-frame">
+                  <div className="ep-video-wrapper-9-16">
+                    {embedVideoUrl.endsWith(".mp4") || embedVideoUrl.endsWith(".webm") ? (
+                      <>
+                        <video
+                          ref={videoElementRef}
+                          playsInline
+                          autoPlay
+                          muted={isVideoMuted}
+                          controls
+                          className={`w-full h-full ${isFullscreen ? "object-contain bg-black" : "object-cover"}`}
+                          style={
+                            isFullscreen
+                              ? { objectFit: "contain", backgroundColor: "#000", width: "100%", height: "100%" }
+                              : {}
+                          }
                         >
-                          <Maximize size={12} />
-                          <span>Fullscreen</span>
-                        </button>
-                        {isVideoMuted && (
+                          <source src={embedVideoUrl} type="video/mp4" />
+                          Your browser does not support playing this video format.
+                        </video>
+                        <div className="ep-video-top-controls">
                           <button
                             type="button"
-                            onClick={() => {
-                              setIsVideoMuted(false);
-                              if (videoElementRef.current) {
-                                videoElementRef.current.muted = false;
-                              }
-                            }}
-                            className="ep-video-sound-pill"
+                            onClick={handleToggleFullscreen}
+                            className="ep-video-fs-btn"
+                            title="Fullscreen 9:16 Video"
                           >
-                            <VolumeX size={13} />
-                            <span>Tap for Sound</span>
+                            <Maximize size={12} />
+                            <span>Fullscreen</span>
                           </button>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <iframe
-                      ref={iframeRef}
-                      src={embedVideoUrl}
-                      title="Wedding Video"
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
+                          {isVideoMuted && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsVideoMuted(false);
+                                if (videoElementRef.current) {
+                                  videoElementRef.current.muted = false;
+                                }
+                              }}
+                              className="ep-video-sound-pill"
+                            >
+                              <VolumeX size={13} />
+                              <span>Tap for Sound</span>
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <iframe
+                        ref={iframeRef}
+                        src={embedVideoUrl}
+                        title="Wedding Video"
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    )}
+                  </div>
 
-                <div className="ep-video-status-footer">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <span className={`w-2 h-2 rounded-full transition-colors ${isVideoPlaying ? "bg-emerald-500 animate-pulse" : "bg-[#B47674]/60"}`} />
-                    <span>{isVideoPlaying ? "Playing welcome video" : "Paused • Resumes as you scroll"}</span>
-                  </span>
-                  <span className="hidden sm:inline">Auto-scroll active</span>
+                  <div className="ep-video-status-footer">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span className={`w-2 h-2 rounded-full transition-colors ${isVideoPlaying ? "bg-emerald-500 animate-pulse" : "bg-[#B47674]/60"}`} />
+                      <span>{isVideoPlaying ? "Playing welcome video" : "Paused • Resumes as you scroll"}</span>
+                    </span>
+                    <span className="hidden sm:inline">Auto-scroll active</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <VideoPreparationCard
+                theme="elegant-pastel"
+                brideName={brideName}
+                groomName={groomName}
+              />
+            )}
           </div>
         </section>
       )}

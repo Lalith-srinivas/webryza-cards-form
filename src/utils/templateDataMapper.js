@@ -250,9 +250,33 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
   }
 
   // Media extraction (supports both images object and flat fields)
-  // If aiVideoRequired is explicitly false, videoUrl MUST be empty so no video is rendered
+  // Dynamic video state: distinguishes between no-video requested, video in preparation, and video uploaded
   const aiVideoRequired = Boolean(docData.aiVideoRequired);
-  const videoUrl = aiVideoRequired ? (docData.videoUrl || "").trim() : "";
+  const rawVideoStatus = String(docData.videoStatus || docData.aiVideoStatus || "").toLowerCase().trim();
+  const rawVideoUrl = String(docData.videoUrl || "").trim();
+  const videoPublicId = String(docData.videoPublicId || "").trim();
+  const videoUploadedAt = docData.videoUploadedAt || null;
+
+  // Video section should appear if customer requested video or if admin assigned a video
+  const hasVideoSection = Boolean(
+    aiVideoRequired ||
+    rawVideoStatus === "pending" ||
+    rawVideoStatus === "uploaded" ||
+    rawVideoUrl
+  );
+
+  // Video is active and ready to play if valid videoUrl exists and status is not pending/processing
+  const isVideoUploaded = Boolean(
+    rawVideoUrl &&
+    rawVideoStatus !== "pending" &&
+    rawVideoStatus !== "processing"
+  );
+
+  const videoStatus = isVideoUploaded
+    ? "uploaded"
+    : (hasVideoSection ? "pending" : "not_requested");
+
+  const videoUrl = isVideoUploaded ? rawVideoUrl : "";
   const bridePhotoUrl = (docData.images?.bride || docData.bridePhotoUrl || "").trim();
   const groomPhotoUrl = (docData.images?.groom || docData.groomPhotoUrl || "").trim();
   const couplePhotoUrl = (docData.images?.couple || docData.couplePhotoUrl || "").trim();
@@ -351,6 +375,12 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
 
     // Media
     videoUrl,
+    rawVideoUrl,
+    videoPublicId,
+    videoStatus,
+    videoUploadedAt,
+    hasVideoSection,
+    isVideoUploaded,
     coupleImage,
     brideImage,
     groomImage,
@@ -373,7 +403,7 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     // System Status
     websiteStatus: docData.websiteStatus || "published",
     websiteUrl: docData.websiteUrl || `https://cards.webryza.in/card=${safeId}`,
-    aiVideoRequired: Boolean(docData.aiVideoRequired),
-    aiVideoStatus: docData.aiVideoStatus || "not_requested",
+    aiVideoRequired,
+    aiVideoStatus: videoStatus,
   };
 }

@@ -80,5 +80,6 @@ export const sampleWeddingData = {
     }
   ],
   videoUrl: "/templates/temple-heritage/marriage_video.mp4",
-  aiVideoRequired: true
+  aiVideoRequired: true,
+  videoStatus: "uploaded"
 };
