@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RoyalGold from "../templates/RoyalGold";
 import TempleHeritage from "../templates/TempleHeritage";
 import ElegantPastel from "../templates/ElegantPastel";
@@ -30,6 +30,20 @@ export default function TemplatePreviewPage({ initialTemplate }) {
 
   const [activeTemplate, setActiveTemplate] = useState(getInitialTemplate);
   const [showBanner, setShowBanner] = useState(true);
+
+  // Automatically scroll back to the very top whenever switching templates
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }, [activeTemplate]);
+
+  const handleSwitchTemplate = (templateName) => {
+    setActiveTemplate(templateName);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  };
 
   const toggleBrowserFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -80,7 +94,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
           <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
             <button
               type="button"
-              onClick={() => setActiveTemplate("royal-gold")}
+              onClick={() => handleSwitchTemplate("royal-gold")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                 activeTemplate === "royal-gold"
                   ? "bg-[#D4AF37] text-[#38020E] shadow"
@@ -93,7 +107,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
 
             <button
               type="button"
-              onClick={() => setActiveTemplate("temple-heritage")}
+              onClick={() => handleSwitchTemplate("temple-heritage")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                 activeTemplate === "temple-heritage"
                   ? "bg-[#D4AF37] text-[#1b4d3e] shadow"
@@ -106,7 +120,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
 
             <button
               type="button"
-              onClick={() => setActiveTemplate("elegant-pastel")}
+              onClick={() => handleSwitchTemplate("elegant-pastel")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                 activeTemplate === "elegant-pastel"
                   ? "bg-[#F7ECE8] text-[#7D4948] shadow font-bold"
@@ -119,7 +133,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
 
             <button
               type="button"
-              onClick={() => setActiveTemplate("lake-como-letters")}
+              onClick={() => handleSwitchTemplate("lake-como-letters")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                 activeTemplate === "lake-como-letters"
                   ? "bg-[#3f5138] text-[#f9f7f2] shadow font-bold"
@@ -134,7 +148,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
       )}
 
       {/* Render Selected Full-Screen Template */}
-      <div className="w-full min-h-screen">
+      <div key={activeTemplate} className="w-full min-h-screen">
         {activeTemplate === "lake-como-letters" || activeTemplate === "lakecomo-letters" ? (
           <LakeComoLetters data={sampleLakeComoData} />
         ) : activeTemplate === "elegant-pastel" || activeTemplate === "elegant-pastel-romance" ? (

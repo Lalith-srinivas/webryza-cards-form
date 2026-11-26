@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useFormContext } from "../context/FormContext";
 import {
@@ -94,6 +94,23 @@ export const TEMPLATES = [
 export default function StepTemplateSelection() {
   const { formData, updateField } = useFormContext();
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const previewScrollRef = useRef(null);
+
+  // Reset preview modal scroll to the very top whenever switching templates
+  useEffect(() => {
+    if (previewTemplate && previewScrollRef.current) {
+      previewScrollRef.current.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      previewScrollRef.current.scrollTop = 0;
+    }
+  }, [previewTemplate?.id]);
+
+  const handleSwitchPreviewTemplate = (template) => {
+    setPreviewTemplate(template);
+    if (previewScrollRef.current) {
+      previewScrollRef.current.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      previewScrollRef.current.scrollTop = 0;
+    }
+  };
 
   // Normalize selected template
   const currentSelected = formData.templateId || "royal-gold";
@@ -329,7 +346,7 @@ export default function StepTemplateSelection() {
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => setPreviewTemplate(t)}
+                      onClick={() => handleSwitchPreviewTemplate(t)}
                       className={`px-3 py-1 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
                         isActive
                           ? "bg-[#D4AF37] text-[#25201A] font-bold shadow-sm ring-1 ring-[#D4AF37]"
@@ -344,7 +361,11 @@ export default function StepTemplateSelection() {
             </header>
 
             {/* Scrollable Full-Screen Template Content */}
-            <main className="flex-1 overflow-y-auto w-full h-full bg-[#FAF7F2] relative">
+            <main
+              ref={previewScrollRef}
+              key={previewTemplate.id}
+              className="flex-1 overflow-y-auto w-full h-full bg-[#FAF7F2] relative"
+            >
               {React.createElement(previewTemplate.component, {
                 data: previewTemplate.sampleData,
               })}

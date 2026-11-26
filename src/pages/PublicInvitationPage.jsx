@@ -275,6 +275,13 @@ export default function PublicInvitationPage() {
     }
   }, [isCardUrl, fetchWeddingInvitation]);
 
+  // Scroll to top when invitation or template changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }, [templateId, weddingIdentifier]);
+
   // Load sample demo fallback if user clicks preview demo
   const handleLoadSampleDemo = (demoTemplate = "temple-heritage") => {
     let sample = sampleTempleData;
