@@ -80,9 +80,7 @@ export function validateWeddingDetails(data) {
   if (!data.venueAddress || !data.venueAddress.trim()) {
     errors.venueAddress = "Venue Address is required";
   }
-  if (!data.venueLocation || !data.venueLocation.trim()) {
-    errors.venueLocation = "Google Maps Location Link is required";
-  } else if (!isValidUrl(data.venueLocation)) {
+  if (data.venueLocation && data.venueLocation.trim() && !isValidUrl(data.venueLocation)) {
     errors.venueLocation = "Please enter a valid Google Maps link (e.g. https://maps.google.com/...)";
   }
   return errors;
@@ -117,6 +115,19 @@ export function validateAmount(amount) {
     return "Minimum amount must be at least ₹1,500";
   }
   return null;
+}
+
+/**
+ * Validates optional wedding video selection:
+ * If videoRequired is true, customer must select one videoStyle.
+ * If videoRequired is false, no videoStyle is required.
+ */
+export function validateVideoSelection(data) {
+  const errors = {};
+  if (data?.videoRequired && (!data.videoStyle || !String(data.videoStyle).trim())) {
+    errors.videoStyle = "Please select one video style to proceed with your wedding video.";
+  }
+  return errors;
 }
 
 /**

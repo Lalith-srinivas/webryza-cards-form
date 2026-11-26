@@ -251,7 +251,9 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
 
   // Media extraction (supports both images object and flat fields)
   // Dynamic video state: distinguishes between no-video requested, video in preparation, and video uploaded
-  const aiVideoRequired = Boolean(docData.aiVideoRequired);
+  const videoRequired = Boolean(docData.videoRequired ?? docData.aiVideoRequired);
+  const videoStyle = docData.videoStyle || null;
+  const aiVideoRequired = videoRequired;
   const rawVideoStatus = String(docData.videoStatus || docData.aiVideoStatus || "").toLowerCase().trim();
   const rawVideoUrl = String(docData.videoUrl || "").trim();
   const videoPublicId = String(docData.videoPublicId || "").trim();
@@ -405,5 +407,7 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
     websiteUrl: docData.websiteUrl || `https://cards.webryza.in/card=${safeId}`,
     aiVideoRequired,
     aiVideoStatus: videoStatus,
+    videoRequired,
+    videoStyle,
   };
 }

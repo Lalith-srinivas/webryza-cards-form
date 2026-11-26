@@ -104,7 +104,7 @@ assert(Object.keys(validCouple).length === 0, "Complete couple details produce n
 
 // Wedding details validation
 const emptyWedding = validateWeddingDetails({});
-assert(emptyWedding.venueLocation !== undefined, "Missing venueLocation (Google Maps link) correctly flagged as required");
+assert(emptyWedding.venueLocation === undefined, "venueLocation (Google Maps link) is optional when empty");
 assert(emptyWedding.weddingDate !== undefined, "Missing weddingDate correctly flagged as required");
 
 const invalidUrlWedding = validateWeddingDetails({
@@ -115,6 +115,14 @@ const invalidUrlWedding = validateWeddingDetails({
   venueLocation: "not-a-valid-url",
 });
 assert(invalidUrlWedding.venueLocation !== undefined, "Invalid venueLocation URL correctly flagged");
+
+const validWeddingNoLink = validateWeddingDetails({
+  weddingDate: "2026-12-14",
+  weddingTime: "10:30 AM",
+  venueName: "Sri Venkateswara Kalyana Mandapam",
+  venueAddress: "Tirupati, AP",
+});
+assert(Object.keys(validWeddingNoLink).length === 0, "Valid wedding details without Google Maps link produce no errors (optional)");
 
 const validWedding = validateWeddingDetails({
   weddingDate: "2026-12-14",

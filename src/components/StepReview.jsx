@@ -351,16 +351,22 @@ export default function StepReview() {
             <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EEDEB3]/50">
               <div className="flex items-center space-x-1.5 text-[#8B6E32]">
                 <Video size={14} className="text-[#93611D]" />
-                <span className="font-medium text-[11px]">AI Invitation Video</span>
+                <span className="font-medium text-[11px]">Wedding Video</span>
               </div>
-              <span className="font-bold text-sm text-[#25201A] block mt-1">
-                {formData.aiVideoRequired ? "Yes, Required" : "Not Required"}
-              </span>
-              <span className="text-[10px] text-[#665C51] block mt-0.5">
-                {formData.aiVideoRequired
-                  ? "Bespoke cinematic couple intro video will be produced"
-                  : "Standard premium website invitation"}
-              </span>
+              {formData.videoRequired ? (
+                <>
+                  <span className="font-bold text-sm text-[#25201A] block mt-1">
+                    Video Included
+                  </span>
+                  <span className="text-xs font-semibold text-[#93611D] block mt-0.5">
+                    {formData.videoStyle || "Style Selected"}
+                  </span>
+                </>
+              ) : (
+                <span className="font-bold text-sm text-[#25201A] block mt-1">
+                  No Wedding Video Selected
+                </span>
+              )}
             </div>
 
             <div className="p-3 bg-[#FCF9F0] rounded-xl border border-[#D4AF37]/40">

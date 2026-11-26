@@ -7,6 +7,7 @@ import {
   validateEvent,
   validateAmount,
   validateTemplatePhotos,
+  validateVideoSelection,
 } from "../utils/validation";
 
 const FormContext = createContext(null);
@@ -44,7 +45,9 @@ const INITIAL_FORM_STATE = {
   // Step 4: Wedding Events
   events: [],
 
-  // Step 5: AI Video & Package Pricing
+  // Step 5: Optional Wedding Video & Package Pricing
+  videoRequired: false,
+  videoStyle: null,
   aiVideoRequired: false,
   amountCharged: "1500",
 };
@@ -111,6 +114,19 @@ export const FormProvider = ({ children }) => {
         updated.images = { ...(prev.images || {}), gallery: value };
       }
 
+      // Keep video fields synchronized: turning off video clears videoStyle
+      if (field === "videoRequired") {
+        updated.aiVideoRequired = Boolean(value);
+        if (!value) {
+          updated.videoStyle = null;
+        }
+      } else if (field === "videoStyle") {
+        if (value) {
+          updated.videoRequired = true;
+          updated.aiVideoRequired = true;
+        }
+      }
+
       return updated;
     });
 
@@ -174,6 +190,10 @@ export const FormProvider = ({ children }) => {
       if (amtErr) {
         stepErrors.amountCharged = amtErr;
       }
+      const videoErrors = validateVideoSelection(formData);
+      if (videoErrors.videoStyle) {
+        stepErrors.videoStyle = videoErrors.videoStyle;
+      }
     }
 
     setErrors(stepErrors);
@@ -219,6 +239,8 @@ export const FormProvider = ({ children }) => {
       ...weddingErrors,
     };
     if (amountError) allErrors.amountCharged = amountError;
+    const videoErrors = validateVideoSelection(formData);
+    if (videoErrors.videoStyle) allErrors.videoStyle = videoErrors.videoStyle;
     if (!formData.templateId) allErrors.templateId = "Please choose a wedding template.";
 
     if (Object.keys(allErrors).length > 0) {
