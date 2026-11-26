@@ -18,6 +18,7 @@ import {
   Store,
   ExternalLink,
   CreditCard,
+  CheckCircle2,
 } from "lucide-react";
 import { formatINR, formatDatePretty } from "../utils/formatters";
 import { TEMPLATES } from "./StepTemplateSelection";
