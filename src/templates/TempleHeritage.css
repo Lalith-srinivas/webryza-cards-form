@@ -867,6 +867,52 @@ video:-webkit-full-screen {
   max-width: 500px;
 }
 
+.countdown-directions-wrapper {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.countdown-directions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 30px;
+  background: linear-gradient(135deg, #ECC880 0%, #D4AF37 50%, #B8952A 100%);
+  color: #2D080E;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 235, 175, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 18px rgba(212, 175, 55, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.countdown-directions-btn:hover {
+  background: linear-gradient(135deg, #FFF0B8 0%, #E6BF48 50%, #CFA335 100%);
+  color: #1A0408;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 28px rgba(212, 175, 55, 0.5);
+}
+
+.countdown-directions-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.countdown-directions-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.countdown-directions-btn:hover .countdown-directions-icon {
+  transform: translateY(-1px);
+}
+
 /* ═══════════════════════════════════════════
    FOOTER (FULL-PAGE TEMPLE BACKGROUND)
 ═══════════════════════════════════════════ */

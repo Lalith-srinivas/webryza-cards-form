@@ -102,6 +102,29 @@ const validCouple = validateCoupleDetails({
 });
 assert(Object.keys(validCouple).length === 0, "Complete couple details produce no errors");
 
+// Wedding details validation
+const emptyWedding = validateWeddingDetails({});
+assert(emptyWedding.venueLocation !== undefined, "Missing venueLocation (Google Maps link) correctly flagged as required");
+assert(emptyWedding.weddingDate !== undefined, "Missing weddingDate correctly flagged as required");
+
+const invalidUrlWedding = validateWeddingDetails({
+  weddingDate: "2026-12-14",
+  weddingTime: "10:30 AM",
+  venueName: "Sri Venkateswara Kalyana Mandapam",
+  venueAddress: "Tirupati, AP",
+  venueLocation: "not-a-valid-url",
+});
+assert(invalidUrlWedding.venueLocation !== undefined, "Invalid venueLocation URL correctly flagged");
+
+const validWedding = validateWeddingDetails({
+  weddingDate: "2026-12-14",
+  weddingTime: "10:30 AM",
+  venueName: "Sri Venkateswara Kalyana Mandapam",
+  venueAddress: "Tirupati, AP",
+  venueLocation: "https://maps.google.com/?q=Tirupati",
+});
+assert(Object.keys(validWedding).length === 0, "Valid wedding details with Google Maps link produce no errors");
+
 // Event validation
 const validEvent = validateEvent({
   eventName: "Haldi",

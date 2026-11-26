@@ -139,7 +139,7 @@ export default function StepWeddingDetails() {
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-[#25201A] uppercase tracking-wider mb-1">
-            Google Maps Location Link <span className="text-xs font-normal text-[#8B6E32] lowercase">(optional)</span>
+            Google Maps Location Link <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#998F81]">
@@ -158,7 +158,7 @@ export default function StepWeddingDetails() {
           {errors.venueLocation ? (
             <p className="text-xs text-rose-600 mt-1">{errors.venueLocation}</p>
           ) : (
-            <p className="text-[11px] text-[#8B6E32] mt-1">Guests can tap a &ldquo;Navigate&rdquo; button directly on your website to reach the venue.</p>
+            <p className="text-[11px] text-[#8B6E32] mt-1">Guests will tap &ldquo;Get Directions&rdquo; to navigate straight to your venue.</p>
           )}
         </div>
 

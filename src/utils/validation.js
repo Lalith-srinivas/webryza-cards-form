@@ -80,7 +80,9 @@ export function validateWeddingDetails(data) {
   if (!data.venueAddress || !data.venueAddress.trim()) {
     errors.venueAddress = "Venue Address is required";
   }
-  if (data.venueLocation && data.venueLocation.trim() && !isValidUrl(data.venueLocation)) {
+  if (!data.venueLocation || !data.venueLocation.trim()) {
+    errors.venueLocation = "Google Maps Location Link is required";
+  } else if (!isValidUrl(data.venueLocation)) {
     errors.venueLocation = "Please enter a valid Google Maps link (e.g. https://maps.google.com/...)";
   }
   return errors;
