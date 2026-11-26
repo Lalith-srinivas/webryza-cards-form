@@ -79,5 +79,6 @@ export const sampleWeddingData = {
       description: "An opulent gala dinner with family, friends, and distinguished guests."
     }
   ],
-  videoUrl: "/templates/temple-heritage/marriage_video.mp4"
+  videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+  aiVideoRequired: true
 };

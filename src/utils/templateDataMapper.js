@@ -139,11 +139,11 @@ export function normalizeTemplateId(templateId = "") {
   if (raw.includes("temple") || raw.includes("vishu") || raw.includes("heritage")) {
     return "temple-heritage";
   }
-  if (raw.includes("pastel") || raw.includes("romance") || raw.includes("watercolor")) {
-    return "elegant-pastel-romance";
-  }
-  if (raw.includes("lake") || raw.includes("letters") || raw.includes("como")) {
+  if (raw.includes("floral") || raw.includes("botanical") || raw.includes("bloom") || raw.includes("lake") || raw.includes("letters") || raw.includes("como")) {
     return "lakecomo-letters";
+  }
+  if (raw.includes("pastel") || raw.includes("watercolor") || raw.includes("romance")) {
+    return "elegant-pastel-romance";
   }
   return "royal-gold";
 }
@@ -250,7 +250,9 @@ export function mapFirestoreToTemplateData(docData = {}, weddingIdentifier = "")
   }
 
   // Media extraction (supports both images object and flat fields)
-  const videoUrl = (docData.videoUrl || "").trim();
+  // If aiVideoRequired is explicitly false, videoUrl MUST be empty so no video is rendered
+  const aiVideoRequired = Boolean(docData.aiVideoRequired);
+  const videoUrl = aiVideoRequired ? (docData.videoUrl || "").trim() : "";
   const bridePhotoUrl = (docData.images?.bride || docData.bridePhotoUrl || "").trim();
   const groomPhotoUrl = (docData.images?.groom || docData.groomPhotoUrl || "").trim();
   const couplePhotoUrl = (docData.images?.couple || docData.couplePhotoUrl || "").trim();

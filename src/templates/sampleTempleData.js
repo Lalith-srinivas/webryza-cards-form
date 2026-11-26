@@ -15,6 +15,7 @@ export const sampleTempleData = {
   ganeshaImage: "/templates/temple-heritage/images/ganesha_motif.jpg",
   templeBgImage: "/templates/temple-heritage/images/temple_hero_bg.jpg",
   videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+  aiVideoRequired: true,
   audioUrl: "/templates/temple-heritage/tabala_flute.mp3",
   rsvpPhone: "919989831499",
   grandparents: [

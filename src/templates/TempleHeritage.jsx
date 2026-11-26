@@ -23,7 +23,13 @@ export default function TempleHeritage({ data = {} }) {
   const coupleImage = data.coupleImage || "/templates/temple-heritage/images/couple_portrait.jpg";
   const ganeshaImage = data.ganeshaImage || "/templates/temple-heritage/images/ganesha_motif.jpg";
   const templeBgImage = data.templeBgImage || "/templates/temple-heritage/images/temple_hero_bg.jpg";
-  const videoUrl = data.videoUrl || "/templates/temple-heritage/marriage_video.mp4";
+  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
+  const hasVideo = Boolean(
+    data.aiVideoRequired !== false &&
+    data.videoUrl &&
+    data.videoUrl.trim()
+  );
+  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
   const audioUrl = data.audioUrl || "/templates/temple-heritage/tabala_flute.mp3";
 
   // Parents and family formatting (Do not display dummy grandparents if not provided)
@@ -572,8 +578,9 @@ export default function TempleHeritage({ data = {} }) {
            SECTION 4: INLINE WEDDING VIDEO
            (Replaces "Follow the action" & Floating Video Button)
            Auto-plays when entering view, pauses on scroll away, resumes where stopped!
+           Rendered ONLY when video is requested and videoUrl is present!
       ═══════════════════════════════════════════ */}
-      {Boolean(videoUrl && embedVideoUrl) && (
+      {Boolean(hasVideo && embedVideoUrl) && (
         <section ref={videoSectionRef} className="th-video-section" id="wedding-video">
           <div className="th-video-header">
             <p className="th-video-subtitle">A Special Welcome Message</p>

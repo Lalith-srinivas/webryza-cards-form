@@ -130,7 +130,7 @@ export function validateTemplatePhotos(data) {
 
   const isTemple = rawTmpl.includes("temple") || rawTmpl.includes("vishu") || rawTmpl.includes("heritage");
   const isPastel = rawTmpl.includes("pastel") || rawTmpl.includes("romance");
-  const isLakecomo = rawTmpl.includes("lake") || rawTmpl.includes("letters") || rawTmpl.includes("como");
+  const isLakecomo = rawTmpl.includes("lake") || rawTmpl.includes("letters") || rawTmpl.includes("como") || rawTmpl.includes("floral") || rawTmpl.includes("botanical") || rawTmpl.includes("bloom");
   const isRoyal = !isTemple && !isPastel && !isLakecomo;
 
   const galleryList = Array.isArray(data.images?.gallery)
@@ -170,9 +170,9 @@ export function validateTemplatePhotos(data) {
     }
   } else if (isLakecomo) {
     if (galleryList.length === 0) {
-      errors.galleryImages = "Lake Como Letters requires at least 1 gallery photo (up to 7 photos).";
+      errors.galleryImages = "Floral Botanical Romance requires at least 1 gallery photo (up to 7 photos).";
     } else if (galleryList.length > 7) {
-      errors.galleryImages = "Maximum 7 gallery photos allowed for Lake Como Letters.";
+      errors.galleryImages = "Maximum 7 gallery photos allowed for Floral Botanical Romance.";
     }
   }
 

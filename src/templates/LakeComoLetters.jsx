@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Calendar,
   Clock,
@@ -20,8 +18,6 @@ import {
   Pause
 } from "lucide-react";
 import "./LakeComoLetters.css";
-
-gsap.registerPlugin(ScrollTrigger);
 
 /**
  * LAKE COMO LETTERS - European Editorial Destination Wedding Invitation Template
@@ -103,7 +99,13 @@ export default function LakeComoLetters({ data = {} }) {
         "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=85"
       ];
 
-  const videoUrl = (data.videoUrl || "").trim();
+  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
+  const hasVideo = Boolean(
+    data.aiVideoRequired !== false &&
+    data.videoUrl &&
+    data.videoUrl.trim()
+  );
+  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
 
   // UI Interactive States
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -257,155 +259,6 @@ export default function LakeComoLetters({ data = {} }) {
     return () => observer.disconnect();
   }, [hasVideoLoaded]);
 
-  // GSAP ScrollTrigger Card Floating Animations
-  useEffect(() => {
-    const mm = gsap.matchMedia();
-
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      // 1. Hero Date Plaque Card
-      gsap.fromTo(
-        ".lcl-date-plaque",
-        { y: 50, opacity: 0, scale: 0.95 },
-        {
-          y: 0,
-          opacity: 1,
-          scale: 1,
-          duration: 1.2,
-          ease: "power3.out",
-          delay: 0.15
-        }
-      );
-
-      // 2. The Main Invitation Letter Card (3D stationery float)
-      gsap.fromTo(
-        ".lcl-letter-card",
-        { y: 80, opacity: 0, scale: 0.94, rotateX: 6 },
-        {
-          y: 0,
-          opacity: 1,
-          scale: 1,
-          rotateX: 0,
-          duration: 1.25,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".lcl-letter-card",
-            start: "top 88%",
-            toggleActions: "play none none none"
-          }
-        }
-      );
-
-      // 3. Story Chapter Cards (Staggered floating entrance)
-      const storyCards = gsap.utils.toArray(".lcl-story-chapter-card");
-      if (storyCards.length) {
-        gsap.fromTo(
-          storyCards,
-          { y: 65, opacity: 0, scale: 0.94 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1,
-            stagger: 0.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: ".lcl-story-chapters-grid",
-              start: "top 84%",
-              toggleActions: "play none none none"
-            }
-          }
-        );
-      }
-
-      // 4. Celebration Villa Cards (Floating arrival on scroll)
-      const eventCards = gsap.utils.toArray(".lcl-event-villa-card");
-      if (eventCards.length) {
-        eventCards.forEach((card) => {
-          gsap.fromTo(
-            card,
-            { y: 70, opacity: 0, scale: 0.95 },
-            {
-              y: 0,
-              opacity: 1,
-              scale: 1,
-              duration: 1.1,
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 86%",
-                toggleActions: "play none none none"
-              }
-            }
-          );
-        });
-      }
-
-      // 5. Video Player Canvas Card
-      if (document.querySelector(".lcl-video-canvas-wrapper")) {
-        gsap.fromTo(
-          ".lcl-video-canvas-wrapper",
-          { y: 75, opacity: 0, scale: 0.95 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1.2,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: ".lcl-video-canvas-wrapper",
-              start: "top 82%",
-              toggleActions: "play none none none"
-            }
-          }
-        );
-      }
-
-      // 6. Photo Gallery Cards (Staggered entrance)
-      const galleryCards = gsap.utils.toArray(".lcl-gallery-card");
-      if (galleryCards.length) {
-        gsap.fromTo(
-          galleryCards,
-          { y: 55, opacity: 0, scale: 0.95 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 0.85,
-            stagger: 0.08,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: ".lcl-gallery-masonry-grid",
-              start: "top 84%",
-              toggleActions: "play none none none"
-            }
-          }
-        );
-      }
-
-      // 7. Venue Destination Editorial Card
-      if (document.querySelector(".lcl-venue-editorial-card")) {
-        gsap.fromTo(
-          ".lcl-venue-editorial-card",
-          { y: 70, opacity: 0, scale: 0.95 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: ".lcl-venue-editorial-card",
-              start: "top 82%",
-              toggleActions: "play none none none"
-            }
-          }
-        );
-      }
-    });
-
-    return () => mm.revert();
-  }, [events, storyChapters, galleryImages]);
-
   // Fullscreen state listener
   useEffect(() => {
     const handleFsChange = () => {
@@ -532,19 +385,52 @@ export default function LakeComoLetters({ data = {} }) {
       </aside>
 
       {/* =====================================================================
-          1. HERO - THE OPENING LETTERS
-          (NO background video as requested; exquisite Italian editorial paper)
+          1. HERO - THE OPENING LETTERS & BOTANICAL BLOSSOMS
           ===================================================================== */}
-      <header className="lcl-hero-section">
-        <div className="lcl-hero-inner">
+      <header className="lcl-hero-section relative overflow-hidden">
+        {/* Floral Corners - Lush Burgundy Roses & Greenery */}
+        <img
+          src="/floral/corner-burgundy-rose.png"
+          alt=""
+          className="lcl-floral-corner lcl-floral-corner-tl"
+          loading="eager"
+        />
+        <img
+          src="/floral/corner-burgundy-rose-right.png"
+          alt=""
+          className="lcl-floral-corner lcl-floral-corner-tr"
+          loading="eager"
+        />
+
+        {/* Side Cascading Gold Peony Clusters */}
+        <img
+          src="/floral/vertical-gold-peony.png"
+          alt=""
+          className="lcl-floral-side lcl-floral-side-left"
+          loading="eager"
+        />
+        <img
+          src="/floral/vertical-gold-peony-right.png"
+          alt=""
+          className="lcl-floral-side lcl-floral-side-right"
+          loading="eager"
+        />
+
+        {/* Wildflower Meadow Floral Border at Base */}
+        <div
+          className="lcl-floral-meadow-banner"
+          style={{ backgroundImage: "url(/floral/meadow-bottom-border.png)" }}
+        />
+
+        <div className="lcl-hero-inner relative z-10">
           {/* Italian Monogram / Laurel Ribbon */}
-          <div className="lcl-hero-crest-monogram lcl-reveal lcl-reveal-up">
+          <div className="lcl-hero-crest-monogram">
             <div className="lcl-laurel-badge">
               <span className="lcl-laurel-initials">
                 {brideName.charAt(0)}<em className="lcl-laurel-amp">&amp;</em>{groomName.charAt(0)}
               </span>
             </div>
-            <p className="lcl-hero-eyebrow">A WEDDING BY THE LAKE</p>
+            <p className="lcl-hero-eyebrow">A FLORAL BOTANICAL CELEBRATION</p>
           </div>
 
           {/* Couple Editorial Title */}
@@ -554,23 +440,23 @@ export default function LakeComoLetters({ data = {} }) {
             <span className="lcl-hero-groom">{groomName}</span>
           </h1>
 
-          <div className="lcl-hero-separator lcl-reveal lcl-reveal-scale lcl-delay-2">
+          <div className="lcl-hero-separator">
             <span className="lcl-sep-line" />
             <span className="lcl-sep-diamond">◇</span>
             <span className="lcl-sep-line" />
           </div>
 
           {/* The Date Is Written Plaque */}
-          <div className="lcl-date-plaque lcl-reveal lcl-reveal-up lcl-delay-3">
+          <div className="lcl-date-plaque">
             <span className="lcl-date-subtitle">The Date Is Written</span>
             <p className="lcl-date-highlight">{formatDatePretty(weddingDateStr)}</p>
             {weddingTimeStr && <p className="lcl-time-highlight">{weddingTimeStr}</p>}
-            <p className="lcl-venue-highlight">{venueName} • Bellagio, Lake Como</p>
+            <p className="lcl-venue-highlight">{venueName ? `${venueName} • ` : ""}A Botanical Garden Romance</p>
           </div>
 
-          {/* Animated Minimal Scroll Indicator */}
-          <a href="#letter" className="lcl-scroll-cue lcl-reveal lcl-reveal-up lcl-delay-4">
-            <span>Scroll to read the letters</span>
+          {/* Minimal Scroll Indicator */}
+          <a href="#letter" className="lcl-scroll-cue">
+            <span>Read our wedding invitation</span>
             <div className="lcl-scroll-pill">
               <div className="lcl-scroll-dot" />
             </div>
@@ -579,18 +465,52 @@ export default function LakeComoLetters({ data = {} }) {
       </header>
 
       {/* =====================================================================
-          2. THE INVITATION LETTER ("Two families on one lake...")
+          2. THE INVITATION LETTER
           ===================================================================== */}
-      <section id="letter" className="lcl-section lcl-invitation-section">
-        <div className="lcl-container">
-          <div className="lcl-letter-card lcl-reveal lcl-reveal-up">
+      <section id="letter" className="lcl-section lcl-invitation-section relative overflow-hidden">
+        {/* Ambient Side Florals */}
+        <img
+          src="/floral/corner-plum-anemone.png"
+          alt=""
+          className="lcl-section-floral-left"
+        />
+        <img
+          src="/floral/corner-peach-blush-right.png"
+          alt=""
+          className="lcl-section-floral-right"
+        />
+
+        <div className="lcl-container relative z-10">
+          <div className="lcl-letter-card relative">
+            {/* Card Corner Floral Accents */}
+            <img
+              src="/floral/corner-peach-blush.png"
+              alt=""
+              className="lcl-card-floral-tl"
+            />
+            <img
+              src="/floral/corner-peach-blush-right.png"
+              alt=""
+              className="lcl-card-floral-tr"
+            />
+            <img
+              src="/floral/corner-plum-anemone.png"
+              alt=""
+              className="lcl-card-floral-bl"
+            />
+            <img
+              src="/floral/corner-plum-anemone-right.png"
+              alt=""
+              className="lcl-card-floral-br"
+            />
+
             <div className="lcl-letter-stamp">
               <span className="lcl-stamp-em">{brideName.charAt(0)}{groomName.charAt(0)}</span>
               <span className="lcl-stamp-year">2027</span>
             </div>
 
             <p className="lcl-letter-prologue">
-              Two families on one lake, and a weekend we will never forget.
+              Two families blooming together in love, and a celebration we will cherish forever.
             </p>
 
             <div className="lcl-letter-ornament">
@@ -642,19 +562,30 @@ export default function LakeComoLetters({ data = {} }) {
       </section>
 
       {/* =====================================================================
-          3. THEIR STORY ("A collection of beautiful almosts becoming forever")
+          3. THEIR STORY
           ===================================================================== */}
       {storyChapters.length > 0 && (
-        <section className="lcl-section lcl-story-section">
-          <div className="lcl-container">
+        <section className="lcl-section lcl-story-section relative overflow-hidden">
+          <img src="/floral/corner-peach-blush.png" alt="" className="lcl-section-floral-left" />
+          <img src="/floral/corner-plum-anemone-right.png" alt="" className="lcl-section-floral-right" />
+
+          <div className="lcl-container relative z-10">
             <div className="lcl-section-header">
+              <div className="lcl-header-floral-crest">
+                <img src="/floral/corner-peach-blush.png" alt="" className="lcl-header-floral-img" />
+              </div>
               <p className="lcl-section-tag">THEIR STORY</p>
               <h2 className="lcl-section-title">A collection of beautiful almosts becoming forever</h2>
             </div>
 
             <div className="lcl-story-chapters-grid">
               {storyChapters.map((ch, idx) => (
-                <div key={idx} className={`lcl-story-chapter-card lcl-reveal lcl-reveal-up lcl-delay-${(idx % 4) + 1}`}>
+                <div key={idx} className="lcl-story-chapter-card relative">
+                  <img
+                    src="/floral/corner-peach-blush.png"
+                    alt=""
+                    className="absolute -top-3 -left-3 w-12 h-12 pointer-events-none drop-shadow-sm opacity-90"
+                  />
                   <div className="lcl-chapter-header">
                     <span className="lcl-chapter-num">{ch.chapter || `0${idx + 1}`}</span>
                     <span className="lcl-chapter-year">{ch.year || "2027"}</span>
@@ -669,20 +600,38 @@ export default function LakeComoLetters({ data = {} }) {
       )}
 
       {/* =====================================================================
-          4. THE CELEBRATIONS ("A wedding told in ceremonies, colour, music...")
+          4. THE CELEBRATIONS
           ===================================================================== */}
       {events.length > 0 && (
-        <section className="lcl-section lcl-events-section">
-          <div className="lcl-container">
+        <section className="lcl-section lcl-events-section relative overflow-hidden">
+          <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-floral-corner lcl-floral-corner-tl" />
+          <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-floral-corner lcl-floral-corner-tr" />
+
+          <div className="lcl-container relative z-10">
             <div className="lcl-section-header">
+              <div className="lcl-header-floral-crest">
+                <img src="/floral/vertical-gold-peony.png" alt="" className="lcl-header-floral-img" />
+              </div>
               <p className="lcl-section-tag">THE CELEBRATIONS</p>
               <h2 className="lcl-section-title">A wedding told in ceremonies, colour, music and light</h2>
-              <p className="lcl-section-intro">Three unforgettable days along the lakeside.</p>
+              <p className="lcl-section-intro">Three unforgettable days surrounded by nature&apos;s blossoms.</p>
             </div>
 
             <div className="lcl-events-cards-wrapper">
               {events.map((evt, idx) => (
-                <div key={idx} className={`lcl-event-villa-card lcl-reveal lcl-reveal-up lcl-delay-${(idx % 3) + 1}`}>
+                <div key={idx} className="lcl-event-villa-card relative">
+                  {/* Floral Card Embellishments */}
+                  <img
+                    src={idx % 2 === 0 ? "/floral/corner-burgundy-rose-right.png" : "/floral/corner-plum-anemone-right.png"}
+                    alt=""
+                    className="lcl-card-floral-tr"
+                  />
+                  <img
+                    src={idx % 2 === 0 ? "/floral/corner-peach-blush.png" : "/floral/corner-burgundy-rose.png"}
+                    alt=""
+                    className="lcl-card-floral-bl"
+                  />
+
                   <div className="lcl-event-meta-top">
                     <span className="lcl-event-act">ACT 0{idx + 1} / 0{events.length}</span>
                     {evt.dressCode && (
@@ -736,17 +685,25 @@ export default function LakeComoLetters({ data = {} }) {
 
       {/* =====================================================================
           5. WEDDING VIDEO - EDITORIAL FILM SECTION
-          (Only rendered if videoUrl exists and is non-empty)
+          Rendered ONLY when video is requested and videoUrl is present!
           ===================================================================== */}
-      {videoUrl && (
-        <section ref={videoSectionRef} className="lcl-section lcl-video-section">
-          <div className="lcl-container">
-            <div className="lcl-section-header lcl-reveal lcl-reveal-up">
+      {Boolean(hasVideo && normalizedVideoUrl) && (
+        <section ref={videoSectionRef} className="lcl-section lcl-video-section relative overflow-hidden">
+          <img src="/floral/vertical-gold-peony.png" alt="" className="lcl-floral-side lcl-floral-side-left" />
+          <img src="/floral/vertical-gold-peony-right.png" alt="" className="lcl-floral-side lcl-floral-side-right" />
+
+          <div className="lcl-container relative z-10">
+            <div className="lcl-section-header">
+              <div className="lcl-header-floral-crest">
+                <img src="/floral/corner-peach-blush.png" alt="" className="lcl-header-floral-img" />
+              </div>
               <p className="lcl-section-tag">CINEMATIC PREVIEW</p>
               <h2 className="lcl-section-title">Welcome to Our Wedding Film</h2>
             </div>
 
-            <div className="lcl-video-canvas-wrapper lcl-reveal lcl-reveal-scale">
+            <div className="lcl-video-canvas-wrapper relative">
+              <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-card-floral-tl" />
+              <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-card-floral-tr" />
               <div className="lcl-video-container-portrait">
                 {isDirectVideo ? (
                   <video
@@ -762,7 +719,7 @@ export default function LakeComoLetters({ data = {} }) {
                   <iframe
                     ref={iframeRef}
                     src={normalizedVideoUrl}
-                    title="Lake Como Wedding Film"
+                    title="Wedding Film"
                     className="lcl-video-iframe-element"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
@@ -773,7 +730,7 @@ export default function LakeComoLetters({ data = {} }) {
                 <div className="lcl-video-hud-bar">
                   <div className="lcl-video-status-indicator">
                     <span className="lcl-video-status-dot" />
-                    <span>{isVideoPlaying ? "Playing wedding film" : "Automatic scroll playback ready"}</span>
+                    <span>{isVideoPlaying ? "Playing wedding film" : "Automatic playback ready"}</span>
                   </div>
 
                   <div className="lcl-video-actions">
@@ -814,12 +771,18 @@ export default function LakeComoLetters({ data = {} }) {
       )}
 
       {/* =====================================================================
-          6. PHOTO GALLERY ("A Few Favourite Frames")
+          6. PHOTO GALLERY
           ===================================================================== */}
       {galleryImages.length > 0 && (
-        <section className="lcl-section lcl-gallery-section">
-          <div className="lcl-container">
-            <div className="lcl-section-header lcl-reveal lcl-reveal-up">
+        <section className="lcl-section lcl-gallery-section relative overflow-hidden">
+          <img src="/floral/corner-plum-anemone.png" alt="" className="lcl-floral-corner lcl-floral-corner-tl" />
+          <img src="/floral/corner-plum-anemone-right.png" alt="" className="lcl-floral-corner lcl-floral-corner-tr" />
+
+          <div className="lcl-container relative z-10">
+            <div className="lcl-section-header">
+              <div className="lcl-header-floral-crest">
+                <img src="/floral/vertical-gold-peony.png" alt="" className="lcl-header-floral-img" />
+              </div>
               <p className="lcl-section-tag">A FEW FAVOURITE FRAMES</p>
               <h2 className="lcl-section-title">Gallery</h2>
               <p className="lcl-section-intro">The photographs and quiet moments that brought us here.</p>
@@ -845,7 +808,7 @@ export default function LakeComoLetters({ data = {} }) {
                     key={idx}
                     className={`lcl-gallery-card ${isFeatured ? "lcl-gallery-card-featured" : ""} ${
                       galleryImages.length === 1 ? "aspect-[4/5] sm:aspect-square" : ""
-                    } lcl-reveal lcl-reveal-up lcl-delay-${(idx % 4) + 1}`}
+                    }`}
                     onClick={() => setActivePhotoIndex(idx)}
                     role="button"
                     tabIndex={0}
@@ -928,12 +891,18 @@ export default function LakeComoLetters({ data = {} }) {
       )}
 
       {/* =====================================================================
-          7. THE DESTINATION ("Villa Aurelia")
+          7. THE DESTINATION
           ===================================================================== */}
       {venueName && (
-        <section className="lcl-section lcl-venue-section">
-          <div className="lcl-container">
-            <div className="lcl-venue-editorial-card lcl-reveal lcl-reveal-up">
+        <section className="lcl-section lcl-venue-section relative overflow-hidden">
+          <img src="/floral/corner-peach-blush.png" alt="" className="lcl-section-floral-left" />
+          <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-section-floral-right" />
+
+          <div className="lcl-container relative z-10">
+            <div className="lcl-venue-editorial-card relative">
+              <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-card-floral-tl" />
+              <img src="/floral/corner-plum-anemone-right.png" alt="" className="lcl-card-floral-br" />
+
               <div className="lcl-venue-media-half">
                 <img src={venueImage} alt={venueName} className="lcl-venue-img" />
               </div>
@@ -972,12 +941,27 @@ export default function LakeComoLetters({ data = {} }) {
       )}
 
       {/* =====================================================================
-          8. CLOSING SECTION ("Forever Begins Here")
-          (NO RSVP as requested by user; clean European destination signature)
+          8. CLOSING SECTION
           ===================================================================== */}
-      <footer className="lcl-final-section">
-        <div className="lcl-container">
+      <footer className="lcl-final-section relative overflow-hidden">
+        {/* 4 Corner Bouquets */}
+        <img src="/floral/corner-burgundy-rose.png" alt="" className="lcl-floral-corner lcl-floral-corner-tl" />
+        <img src="/floral/corner-burgundy-rose-right.png" alt="" className="lcl-floral-corner lcl-floral-corner-tr" />
+        <img src="/floral/corner-plum-anemone.png" alt="" className="lcl-floral-corner lcl-floral-corner-bl" />
+        <img src="/floral/corner-plum-anemone-right.png" alt="" className="lcl-floral-corner lcl-floral-corner-br" />
+
+        {/* Wildflower Meadow Floral Border at Base */}
+        <div
+          className="lcl-floral-meadow-banner"
+          style={{ backgroundImage: "url(/floral/meadow-bottom-border.png)" }}
+        />
+
+        <div className="lcl-container relative z-10">
           <div className="lcl-final-inner">
+            <div className="lcl-header-floral-crest mb-4">
+              <img src="/floral/vertical-gold-peony.png" alt="" className="w-24 sm:w-28 h-auto mx-auto drop-shadow-sm" />
+            </div>
+
             <div className="lcl-final-monogram">
               <span>{brideName.charAt(0)}</span>
               <em>&amp;</em>

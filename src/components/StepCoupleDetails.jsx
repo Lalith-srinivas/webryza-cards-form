@@ -206,13 +206,13 @@ export default function StepCoupleDetails() {
                     {isRoyal && "Royal Gold Wedding Gallery"}
                     {isTemple && "Temple Heritage Couple Photograph"}
                     {isPastel && "Elegant Pastel Romance Photographs & Gallery"}
-                    {isLakecomo && "Lake Como Editorial Gallery"}
+                    {isLakecomo && "Floral Botanical Romance Gallery"}
                   </h3>
                   <p className="text-xs text-[#665C51]">
                     {isRoyal && "Upload between 1 and 6 photographs for your royal wedding gallery grid"}
                     {isTemple && "Upload the couple portrait featured on your traditional temple card"}
                     {isPastel && "Upload couple cover, bride & groom portraits, plus 1 to 8 gallery photos"}
-                    {isLakecomo && "Upload between 1 and 7 photographs for your romantic editorial gallery"}
+                    {isLakecomo && "Upload between 1 and 7 photographs for your romantic floral gallery"}
                   </p>
                 </div>
               </div>
@@ -301,10 +301,10 @@ export default function StepCoupleDetails() {
               </div>
             )}
 
-            {/* TEMPLATE 4: Lake Como Letters -> Gallery Only (1 to 7 images) */}
+            {/* TEMPLATE 4: Floral Botanical Romance -> Gallery Only (1 to 7 images) */}
             {isLakecomo && (
               <GalleryUploadField
-                label="Editorial Gallery Photos"
+                label="Floral Botanical Gallery Photos"
                 sublabel="1 to 7 photos (Min 1 required)"
                 images={galleryImages}
                 onChange={(urls) => updateField("galleryImages", urls)}

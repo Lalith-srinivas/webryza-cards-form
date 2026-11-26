@@ -28,6 +28,7 @@ export const sampleLakeComoData = {
   groomDescription: "Creative director, classical pianist, and avid traveler whose devotion and optimism know no bounds.",
   invitationNote: "On the shores of Lake Como, beneath the cypress trees, we will celebrate our union. Join us for an unforgettable weekend of love, laughter, and family blessings.",
   videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+  aiVideoRequired: true,
   hashtag: "#AnanyaAndKabir2027",
   story: [
     {

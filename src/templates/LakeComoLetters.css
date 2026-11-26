@@ -515,34 +515,193 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SCROLL TO REVEAL ANIMATIONS
+   SCROLL TO REVEAL ANIMATIONS (DISABLED AS REQUESTED FOR INSTANT DISPLAY)
 ══════════════════════════════════════════════════════════════════════════ */
-.lcl-reveal {
-  opacity: 0;
-  will-change: opacity, transform;
-  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.lcl-reveal-up {
-  transform: translateY(32px);
-}
-
-.lcl-reveal-scale {
-  transform: translateY(24px) scale(0.96);
-}
-
+.lcl-reveal,
+.lcl-reveal-up,
+.lcl-reveal-scale,
 .lcl-reveal.lcl-revealed {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 /* Staggered entry transitions */
-.lcl-delay-1 { transition-delay: 0.1s; }
-.lcl-delay-2 { transition-delay: 0.2s; }
-.lcl-delay-3 { transition-delay: 0.3s; }
-.lcl-delay-4 { transition-delay: 0.4s; }
-.lcl-delay-5 { transition-delay: 0.5s; }
+.lcl-delay-1,
+.lcl-delay-2,
+.lcl-delay-3,
+.lcl-delay-4,
+.lcl-delay-5 {
+  transition-delay: 0s !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FLORAL BOTANICAL ORNAMENTS & DECORATIVE SUITE (FULL COVERAGE)
+══════════════════════════════════════════════════════════════════════════ */
+.lcl-floral-corner {
+  position: absolute;
+  pointer-events: none;
+  z-index: 8;
+  user-select: none;
+  filter: drop-shadow(0 8px 24px rgba(40, 50, 35, 0.12));
+}
+
+.lcl-floral-corner-tl {
+  top: 0;
+  left: 0;
+  width: clamp(130px, 22vw, 270px);
+  max-width: 270px;
+}
+
+.lcl-floral-corner-tr {
+  top: 0;
+  right: 0;
+  width: clamp(130px, 22vw, 270px);
+  max-width: 270px;
+}
+
+.lcl-floral-corner-bl {
+  bottom: 0;
+  left: 0;
+  width: clamp(130px, 22vw, 270px);
+  max-width: 270px;
+}
+
+.lcl-floral-corner-br {
+  bottom: 0;
+  right: 0;
+  width: clamp(130px, 22vw, 270px);
+  max-width: 270px;
+}
+
+/* Side vertical cascading floral accents */
+.lcl-floral-side {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(100px, 14vw, 185px);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.92;
+  filter: drop-shadow(0 6px 18px rgba(40, 50, 35, 0.1));
+}
+
+.lcl-floral-side-left {
+  left: 0;
+}
+
+.lcl-floral-side-right {
+  right: 0;
+}
+
+/* Wildflower meadow bottom banner */
+.lcl-floral-meadow-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 15vw, 170px);
+  background-repeat: repeat-x;
+  background-position: bottom center;
+  background-size: auto 100%;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0.9;
+}
+
+/* Card corner floral embellishments */
+.lcl-card-floral-tl {
+  position: absolute;
+  top: -22px;
+  left: -22px;
+  width: clamp(75px, 12vw, 130px);
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 4px 14px rgba(40, 50, 35, 0.14));
+}
+
+.lcl-card-floral-tr {
+  position: absolute;
+  top: -22px;
+  right: -22px;
+  width: clamp(75px, 12vw, 130px);
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 4px 14px rgba(40, 50, 35, 0.14));
+}
+
+.lcl-card-floral-br {
+  position: absolute;
+  bottom: -22px;
+  right: -22px;
+  width: clamp(75px, 12vw, 130px);
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 4px 14px rgba(40, 50, 35, 0.14));
+}
+
+.lcl-card-floral-bl {
+  position: absolute;
+  bottom: -22px;
+  left: -22px;
+  width: clamp(75px, 12vw, 130px);
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 4px 14px rgba(40, 50, 35, 0.14));
+}
+
+/* Section Header Floral Crest */
+.lcl-header-floral-crest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  pointer-events: none;
+}
+
+.lcl-header-floral-img {
+  width: clamp(70px, 10vw, 120px);
+  height: auto;
+  filter: drop-shadow(0 4px 12px rgba(40, 50, 35, 0.12));
+}
+
+/* Floating section ambient florals */
+.lcl-section-floral-left {
+  position: absolute;
+  top: 10%;
+  left: 0;
+  width: clamp(90px, 14vw, 190px);
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.88;
+  filter: drop-shadow(0 6px 16px rgba(40, 50, 35, 0.08));
+}
+
+.lcl-section-floral-right {
+  position: absolute;
+  top: 10%;
+  right: 0;
+  width: clamp(90px, 14vw, 190px);
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.88;
+  filter: drop-shadow(0 6px 16px rgba(40, 50, 35, 0.08));
+}
+
+/* Center floral divider */
+.lcl-floral-center-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px auto;
+  pointer-events: none;
+}
+
+.lcl-floral-center-divider img {
+  width: clamp(80px, 12vw, 140px);
+  height: auto;
+  filter: drop-shadow(0 3px 10px rgba(40, 50, 35, 0.1));
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    CARD SCROLL FLOATING & ELEVATION

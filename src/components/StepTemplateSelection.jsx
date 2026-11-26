@@ -74,17 +74,17 @@ export const TEMPLATES = [
   {
     id: "lakecomo-letters",
     aliasId: "lake-como-letters",
-    name: "Lake Como Letters",
-    subtitle: "European Editorial Destination",
-    badge: "Destination Luxury",
+    name: "Floral Botanical Romance",
+    subtitle: "Handcrafted Botanical Stationery",
+    badge: "Floral Romance",
     color: "#3f5138",
     textColor: "#283223",
     bgColor: "#f4efe6",
     icon: Mail,
     description:
-      "Handcrafted Italian cotton paper stationery, olive cypress aesthetics, and bespoke destination lakeside letters.",
+      "Handcrafted luxury cotton paper stationery, lush garden floral botanicals, and bespoke romantic wedding letters.",
     previewImg:
-      "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
     component: LakeComoLetters,
     sampleData: sampleLakeComoData,
     previewRoute: "/templates/lake-como-letters",

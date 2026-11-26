@@ -166,6 +166,38 @@ assert(normalizeTemplateId("elegant-pastel-romance") === "elegant-pastel-romance
 assert(normalizeTemplateId("pastel-romance") === "elegant-pastel-romance", "pastel-romance mapped to elegant-pastel-romance");
 assert(normalizeTemplateId("lakecomo-letters") === "lakecomo-letters", "lakecomo-letters normalized");
 assert(normalizeTemplateId("lake-como-letters") === "lakecomo-letters", "lake-como-letters normalized");
+assert(normalizeTemplateId("floral-botanical-romance") === "lakecomo-letters", "floral-botanical-romance normalized to lakecomo-letters");
+
+// -----------------------------------------------------------------------------
+// 6. Test AI Video Selection & Opt-Out (No Video Section when aiVideoRequired is false)
+// -----------------------------------------------------------------------------
+console.log("\nSection 6: AI Video Selection & Section Suppression");
+
+// User selects "No" in form (aiVideoRequired: false)
+const noVideoDoc = {
+  weddingId: "WR-9999",
+  templateId: "royal-gold",
+  brideName: "Ananya",
+  groomName: "Kabir",
+  aiVideoRequired: false,
+  videoUrl: "https://example.com/residual_video.mp4",
+};
+const mappedNoVideo = mapFirestoreToTemplateData(noVideoDoc, "WR-9999");
+assert(mappedNoVideo.aiVideoRequired === false, "aiVideoRequired is strictly false when user opts out");
+assert(mappedNoVideo.videoUrl === "", "videoUrl is cleared to empty string when user selects NO for video");
+
+// User selects "Yes" in form (aiVideoRequired: true)
+const withVideoDoc = {
+  weddingId: "WR-9998",
+  templateId: "temple-heritage",
+  brideName: "Priya",
+  groomName: "Rahul",
+  aiVideoRequired: true,
+  videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+};
+const mappedWithVideo = mapFirestoreToTemplateData(withVideoDoc, "WR-9998");
+assert(mappedWithVideo.aiVideoRequired === true, "aiVideoRequired is true when user selects YES for video");
+assert(mappedWithVideo.videoUrl === "/templates/temple-heritage/marriage_video.mp4", "videoUrl is preserved when user selects YES for video");
 
 // -----------------------------------------------------------------------------
 // Summary

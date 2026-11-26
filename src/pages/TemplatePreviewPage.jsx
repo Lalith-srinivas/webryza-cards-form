@@ -127,7 +127,7 @@ export default function TemplatePreviewPage({ initialTemplate }) {
               }`}
             >
               <Mail size={12} className={activeTemplate === "lake-como-letters" ? "text-[#c5a46d]" : ""} />
-              <span>Lake Como Letters</span>
+              <span>Floral Botanical Romance</span>
             </button>
           </div>
         </header>

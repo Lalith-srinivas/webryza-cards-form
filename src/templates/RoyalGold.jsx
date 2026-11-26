@@ -71,7 +71,13 @@ export default function RoyalGold({ data = {} }) {
         ]
       : [];
   const galleryImages = Array.isArray(data.galleryImages) ? data.galleryImages : [];
-  const videoUrl = (data.videoUrl || "/templates/temple-heritage/marriage_video.mp4").trim();
+  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
+  const hasVideo = Boolean(
+    data.aiVideoRequired !== false &&
+    data.videoUrl &&
+    data.videoUrl.trim()
+  );
+  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
 
   // State: Lightbox modal
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -793,8 +799,9 @@ export default function RoyalGold({ data = {} }) {
 
       {/* =====================================================================
           6. WELCOME VIDEO / AI INVITATION SECTION (AUTOPLAY & RESUME ON SCROLL)
+          Rendered ONLY when video is requested and videoUrl is present!
           ===================================================================== */}
-      {Boolean(videoUrl && embedVideoUrl) && (
+      {Boolean(hasVideo && embedVideoUrl) && (
         <section ref={videoSectionRef} className="py-20 px-4 max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-12">
             <p className="text-xs uppercase tracking-[0.3em] text-[#8B6514] font-bold mb-2">

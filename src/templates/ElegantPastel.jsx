@@ -94,7 +94,13 @@ export default function ElegantPastel({ data = {} }) {
           }
         ]
       : [];
-  const videoUrl = (data.videoUrl || "").trim();
+  // Video Section Visibility: ONLY render if video is requested/present and not opted-out
+  const hasVideo = Boolean(
+    data.aiVideoRequired !== false &&
+    data.videoUrl &&
+    data.videoUrl.trim()
+  );
+  const videoUrl = hasVideo ? data.videoUrl.trim() : "";
 
   // UI Interactive States
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
@@ -822,9 +828,9 @@ export default function ElegantPastel({ data = {} }) {
 
       {/* =====================================================================
           7. WEDDING VIDEO (STRICT 9:16 VERTICAL CANVAS & SCROLL PLAYBACK)
-          Rendered ONLY when videoUrl is present!
+          Rendered ONLY when video is requested and videoUrl is present!
           ===================================================================== */}
-      {Boolean(videoUrl && embedVideoUrl) && (
+      {Boolean(hasVideo && embedVideoUrl) && (
         <section ref={videoSectionRef} className="ep-section" id="video">
           <div className="ep-container-narrow">
             <div className="text-center max-w-xl mx-auto mb-8">

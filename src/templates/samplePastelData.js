@@ -28,6 +28,7 @@ export const samplePastelData = {
   groomDescription: "Creative director, classical pianist, and avid mountaineer whose steady presence and deep kindness bring tranquility to every heartbeat.",
   invitationNote: "With profound gratitude for the love that has guided our paths and the cherished blessings of our families, we joyfully invite you to celebrate the beginning of our new chapter together.",
   videoUrl: "/templates/temple-heritage/marriage_video.mp4",
+  aiVideoRequired: true,
   galleryImages: [
     "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80",
     "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1000&q=80",
