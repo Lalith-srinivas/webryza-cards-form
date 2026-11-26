@@ -98,6 +98,7 @@ export const PartnerAuthProvider = ({ children }) => {
           authUid: authUser.uid,
           role: "partner",
           registrationUrl: `https://cards.webryza.in/?ref=${partnerCode}`,
+          alreadyPaid: Number(partnerData.alreadyPaid || partnerData.totalPayouts || partnerData.payoutsTotal || 0),
         },
       };
     } catch (err) {
@@ -160,6 +161,16 @@ export const PartnerAuthProvider = ({ children }) => {
             setCurrentUser(null);
             setPartnerProfile(null);
             setAuthError("Your partner account has been deactivated. Please contact WebRyza.");
+          } else {
+            setPartnerProfile((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    shopName: data.shopName || prev.shopName,
+                    alreadyPaid: Number(data.alreadyPaid || data.totalPayouts || data.payoutsTotal || 0),
+                  }
+                : prev
+            );
           }
         }
       },
