@@ -11,6 +11,7 @@ import {
   calculatePartnerDashboardMetrics,
   FIXED_PARTNER_COMMISSION,
 } from "../utils/partnerProjectNormalizer";
+import { isWeddingCardTrashed } from "../utils/cardStatus";
 import { TEMPLATES } from "../components/StepTemplateSelection";
 import {
   Store,
@@ -101,11 +102,25 @@ export default function PartnerDashboardPage() {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const docs = snapshot.docs.map((docSnap) =>
-          normalizePartnerProject(docSnap.id, docSnap.data())
-        );
+        // Filter out any trashed / soft-deleted cards so Partner Admin displays only active wedding projects
+        const docs = snapshot.docs
+          .map((docSnap) => ({ id: docSnap.id, data: docSnap.data() }))
+          .filter(({ data }) => !isWeddingCardTrashed(data))
+          .map(({ id, data }) => normalizePartnerProject(id, data));
 
         setProjects(docs);
+
+        // If a project currently open in details or QR modal was moved to Trash, close modal automatically
+        setSelectedProjectDetails((current) => {
+          if (!current) return null;
+          return docs.find((p) => p.id === current.id) || null;
+        });
+
+        setSelectedQrProject((current) => {
+          if (!current) return null;
+          return docs.find((p) => p.id === current.id) || null;
+        });
+
         setLoading(false);
       },
       (err) => {

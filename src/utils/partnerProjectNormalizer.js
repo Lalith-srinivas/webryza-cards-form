@@ -11,6 +11,7 @@
  */
 
 import { formatDatePretty } from "./formatters.js";
+import { isWeddingCardTrashed } from "./cardStatus.js";
 
 export const FIXED_PARTNER_COMMISSION = 500;
 
@@ -205,14 +206,21 @@ export function normalizePartnerProject(docId, data = {}) {
     // Store original fields safely (excluding private credentials)
     partnerId: data.partnerId || "",
     partnerShopName: data.partnerShopName || "",
+    isDeleted: isWeddingCardTrashed(data),
   };
 }
 
 /**
  * Calculates Dashboard Financial Metrics for Partner (Part 2 & Part 3)
+ * Automatically excludes any soft-deleted / trashed projects from metrics
  */
 export function calculatePartnerDashboardMetrics(projects = [], partnerProfile = {}) {
-  const totalProjects = projects.length;
+  // Only active projects count towards Total Projects and Financial Metrics
+  const activeProjects = projects.filter(
+    (p) => !isWeddingCardTrashed(p) && p.isDeleted !== true
+  );
+
+  const totalProjects = activeProjects.length;
 
   let verifiedCount = 0;
   let pendingCount = 0;
@@ -221,7 +229,7 @@ export function calculatePartnerDashboardMetrics(projects = [], partnerProfile =
   let totalCustomerPaid = 0; // Verified customer payments
   let pendingPaymentAmount = 0; // Pending customer payments
 
-  projects.forEach((p) => {
+  activeProjects.forEach((p) => {
     if (p.paymentStatus === "Verified") {
       verifiedCount++;
       totalCustomerPaid += p.customerPaymentAmount;
@@ -239,7 +247,7 @@ export function calculatePartnerDashboardMetrics(projects = [], partnerProfile =
   // Partner Earnings Breakdown (Part 3)
   // Already paid comes from partnerProfile document or count of projects marked "Paid"
   const profilePaid = Number(partnerProfile.alreadyPaid || partnerProfile.totalPayouts || 0);
-  const projectPaidCount = projects.filter(p => p.isPaid).length;
+  const projectPaidCount = activeProjects.filter((p) => p.isPaid).length;
   const projectPaidSum = projectPaidCount * FIXED_PARTNER_COMMISSION;
   const alreadyPaid = Math.max(profilePaid, projectPaidSum);
 

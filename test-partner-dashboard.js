@@ -15,6 +15,7 @@ import {
   calculatePartnerDashboardMetrics,
   FIXED_PARTNER_COMMISSION,
 } from './src/utils/partnerProjectNormalizer.js';
+import { isWeddingCardTrashed } from './src/utils/cardStatus.js';
 
 let passed = 0;
 let failed = 0;
@@ -199,6 +200,89 @@ assert(normalizedLegacy.paymentStatus === 'Verification Pending', 'Legacy record
 assert(normalizedLegacy.partnerCommission === 500, 'Legacy record defaults to fixed ₹500 rule');
 assert(normalizedLegacy.commissionStatus === 'Pending', 'Legacy commission is Pending');
 assert(normalizedLegacy.customerPaymentAmount === 1500, 'Preserves legacy amountCharged ₹1,500');
+
+// --------------------------------------------------------------------------
+// SCENARIO 8: Trash & Restoration Handling in Partner Admin
+// --------------------------------------------------------------------------
+console.log('\n--- SCENARIO 8: Trash & Restoration Handling in Partner Admin ---');
+
+// 1. Initial State: Two active projects for SHOP001 (one verified ₹500, one pending)
+const rawDocActive1 = {
+  id: 'docA',
+  weddingId: 'WR-1001',
+  brideName: 'Sneha',
+  groomName: 'Arjun',
+  partnerId: 'SHOP001',
+  amountCharged: 2000,
+  paymentStatus: 'verified',
+  payment: { amount: 2000, status: 'Verified' },
+  isDeleted: false,
+};
+
+const rawDocActive2 = {
+  id: 'docB',
+  weddingId: 'WR-1002',
+  brideName: 'Priya',
+  groomName: 'Rahul',
+  partnerId: 'SHOP001',
+  amountCharged: 3000,
+  paymentStatus: 'pending',
+  payment: { amount: 3000, status: 'Verification Pending' },
+  isDeleted: false,
+};
+
+// Snapshot with 2 active projects
+const snapshot1Docs = [rawDocActive1, rawDocActive2];
+const activeFiltered1 = snapshot1Docs.filter(d => !isWeddingCardTrashed(d)).map(d => normalizePartnerProject(d.id, d));
+assert(activeFiltered1.length === 2, 'Initially 2 active wedding projects appear in Partner Admin');
+const metricsInitial = calculatePartnerDashboardMetrics(activeFiltered1, { alreadyPaid: 0 });
+assert(metricsInitial.totalProjects === 2, 'Total Projects = 2');
+assert(metricsInitial.partnerEarnings === 500, 'Partner Earnings = ₹500 (from 1 verified project)');
+assert(metricsInitial.pendingProjectsCount === 1, 'Pending Payment count = 1');
+assert(metricsInitial.pendingPaymentAmount === 3000, 'Pending Payment amount = ₹3,000');
+
+// 2. Admin moves docA (verified project) to Trash
+const rawDocTrashedA = {
+  ...rawDocActive1,
+  isDeleted: true,
+  status: 'trashed',
+  deletedAt: { seconds: 1732700000 },
+};
+
+const snapshot2Docs = [rawDocTrashedA, rawDocActive2];
+const activeFiltered2 = snapshot2Docs.filter(d => !isWeddingCardTrashed(d)).map(d => normalizePartnerProject(d.id, d));
+assert(activeFiltered2.length === 1, 'Moving docA to Trash removes it from Partner Admin active projects');
+assert(activeFiltered2[0].weddingId === 'WR-1002', 'Only active project WR-1002 remains visible');
+
+const metricsAfterTrash = calculatePartnerDashboardMetrics(activeFiltered2, { alreadyPaid: 0 });
+assert(metricsAfterTrash.totalProjects === 1, 'Total Projects decrements to 1');
+assert(metricsAfterTrash.partnerEarnings === 0, 'Partner Earnings for trashed card excluded (₹0)');
+assert(metricsAfterTrash.totalCustomerPaid === 0, 'Customer payment of trashed project excluded from Total Paid');
+
+// 3. Admin restores docA
+const rawDocRestoredA = {
+  ...rawDocTrashedA,
+  isDeleted: false,
+  status: 'published',
+  restoredAt: { seconds: 1732710000 },
+};
+
+const snapshot3Docs = [rawDocRestoredA, rawDocActive2];
+const activeFiltered3 = snapshot3Docs.filter(d => !isWeddingCardTrashed(d)).map(d => normalizePartnerProject(d.id, d));
+assert(activeFiltered3.length === 2, 'Restoring wedding makes it reappear in Partner Admin');
+const restoredProject = activeFiltered3.find(p => p.weddingId === 'WR-1001');
+assert(restoredProject.partnerId === 'SHOP001', 'Partner attribution remains unchanged (SHOP001)');
+assert(restoredProject.weddingId === 'WR-1001', 'Wedding ID remains unchanged (WR-1001)');
+assert(restoredProject.customerPaymentAmount === 2000, 'Customer payment amount remains ₹2,000');
+assert(restoredProject.paymentStatus === 'Verified', 'Payment status remains Verified');
+assert(restoredProject.partnerCommission === 500, 'Partner commission remains fixed ₹500');
+
+// 4. Partner earnings are NOT duplicated
+const metricsAfterRestore = calculatePartnerDashboardMetrics(activeFiltered3, { alreadyPaid: 500 });
+assert(metricsAfterRestore.totalProjects === 2, 'Total Projects restored to 2');
+assert(metricsAfterRestore.partnerEarnings === 500, 'Partner Earnings are NOT duplicated (strictly 1 × ₹500 = ₹500)');
+assert(metricsAfterRestore.alreadyPaid === 500, 'Existing payout records remain unchanged (₹500)');
+assert(metricsAfterRestore.remainingPayable === 0, 'Remaining Payable is ₹500 - ₹500 = ₹0');
 
 console.log('\n======================================================');
 console.log(` Partner Admin Test Results: ${passed} passed, ${failed} failed`);
