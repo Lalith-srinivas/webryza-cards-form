@@ -276,18 +276,71 @@ export default function StepPayment() {
                 </div>
 
                 {/* Direct Pay by UPI App Button */}
-                <div>
+                <div className="space-y-3 pt-1">
                   <button
                     type="button"
                     onClick={handlePayViaIntent}
-                    className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#C59B27] to-[#B8860B] text-white font-bold text-sm shadow-lg shadow-[#D4AF37]/25 hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#DFB743] via-[#C59926] to-[#9E7310] p-[2px] shadow-[0_8px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.55)] transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                   >
-                    <Smartphone size={17} />
-                    <span>Pay by Any UPI App</span>
+                    {/* Animated Shimmer Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+
+                    <div className="relative flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 rounded-[14px] bg-gradient-to-r from-[#21170F]/95 via-[#2C1F14]/95 to-[#1A120B]/95 group-hover:from-[#2A1E14]/90 group-hover:to-[#22170E]/90 transition-colors">
+                      {/* Left Icon Badge */}
+                      <div className="flex items-center space-x-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#F5D77F] to-[#C59926] text-[#251A0A] flex items-center justify-center shadow-md shadow-[#C59926]/30 group-hover:scale-105 transition-transform shrink-0">
+                          <Smartphone size={22} className="stroke-[2.2]" />
+                        </div>
+                        <div className="text-left">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-sm sm:text-base text-white tracking-wide">
+                              PAY {formatINR(amountToPay)} VIA UPI
+                            </span>
+                            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#D4AF37] text-[#1B1309] shadow-xs">
+                              Instant
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#EEDEB3]/80 mt-0.5 font-medium">
+                            Tap to open Google Pay, PhonePe, Paytm, or CRED
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right Arrow */}
+                      <div className="flex items-center space-x-1 pl-2 text-[#F3E5AB] group-hover:text-white shrink-0">
+                        <span className="text-xs font-bold hidden md:inline">Pay Now</span>
+                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] group-hover:text-[#1B1309] transition-all">
+                          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
                   </button>
-                  <p className="text-[11px] text-[#EEDEB3]/70 text-center mt-1.5">
-                    Opens Google Pay, PhonePe, Paytm, BHIM, or CRED on your mobile.
-                  </p>
+
+                  {/* Supported UPI Apps Pills */}
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] font-semibold text-[#EEDEB3]/60 uppercase tracking-wider mr-1">
+                      Supported Apps:
+                    </span>
+                    {["Google Pay", "PhonePe", "Paytm", "BHIM", "CRED"].map((app) => (
+                      <span
+                        key={app}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 text-[10px] font-medium text-[#F5E6BA] tracking-tight transition-colors"
+                      >
+                        {app}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-center space-x-3 text-[10px] text-[#EEDEB3]/70 font-medium">
+                    <span className="inline-flex items-center space-x-1">
+                      <ShieldCheck size={11} className="text-emerald-400" />
+                      <span>Zero Extra Fee</span>
+                    </span>
+                    <span>•</span>
+                    <span>100% Secure NPCI UPI</span>
+                    <span>•</span>
+                    <span>Instant Verification</span>
+                  </div>
                 </div>
               </div>
 
@@ -442,21 +495,26 @@ export default function StepPayment() {
             )}
           </div>
 
-          {/* 3. MANDATORY UPI TRANSACTION REFERENCE NUMBER (UTR) */}
+          {/* 3. OPTIONAL UPI TRANSACTION REFERENCE NUMBER (UTR) */}
           <div className="p-5 sm:p-6 rounded-3xl bg-white border border-[#EEDEB3] shadow-sm space-y-3">
             <div>
-              <label className="block text-sm font-semibold text-[#25201A] mb-1">
-                UPI Transaction Reference (UTR / Ref No.) <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-semibold text-[#25201A]">
+                  UPI Transaction Reference (UTR / Ref No.)
+                </label>
+                <span className="text-[11px] font-semibold bg-[#FAF0D7] text-[#8B6E32] px-2.5 py-0.5 rounded-full border border-[#EEDEB3]">
+                  Optional
+                </span>
+              </div>
               <p className="text-xs text-[#665C51]">
-                Enter the 12-digit transaction reference number (UTR) found in your payment app confirmation.
+                If handy, enter the 12-digit UTR from your payment app. You can leave this blank as long as your screenshot is uploaded above.
               </p>
             </div>
 
             <div className="relative max-w-md">
               <input
                 type="text"
-                placeholder="e.g. 412345678901"
+                placeholder="e.g. 412345678901 (optional)"
                 value={transactionRef}
                 onChange={(e) => handleUtrChange(e.target.value)}
                 maxLength={35}

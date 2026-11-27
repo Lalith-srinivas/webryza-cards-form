@@ -205,9 +205,9 @@ export const FormProvider = ({ children }) => {
         stepErrors.videoStyle = videoErrors.videoStyle;
       }
     } else if (stepNumber === 6) {
-      // Step 6: UPI Payment Verification
+      // Step 6: UPI Payment Verification (UTR is optional; proof screenshot is mandatory)
       const utr = (formData.payment?.transactionReference || "").trim();
-      const utrErr = validateUpiTransactionRef(utr);
+      const utrErr = validateUpiTransactionRef(utr, false);
       if (utrErr) {
         stepErrors.transactionReference = utrErr;
       }
@@ -262,7 +262,7 @@ export const FormProvider = ({ children }) => {
     const videoErrors = validateVideoSelection(formData);
     if (videoErrors.videoStyle) allErrors.videoStyle = videoErrors.videoStyle;
     const utr = (formData.payment?.transactionReference || "").trim();
-    const utrErr = validateUpiTransactionRef(utr);
+    const utrErr = validateUpiTransactionRef(utr, false);
     if (utrErr) allErrors.transactionReference = utrErr;
     if (!formData.payment?.paymentProof?.cloudinaryPublicId && !formData.payment?.paymentProof?.url) {
       allErrors.paymentProof = "Payment screenshot upload is mandatory.";

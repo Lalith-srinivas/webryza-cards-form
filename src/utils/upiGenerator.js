@@ -47,12 +47,14 @@ export function generateUpiUri({
 
 /**
  * Validates a customer-entered UPI transaction reference (UTR)
- * Typical Indian banking UTRs are 12 digits, but alphanumeric 6-25 chars can occur
+ * Typical Indian banking UTRs are 12 digits, but alphanumeric 6-35 chars can occur.
+ * If optional (isRequired = false), empty or whitespace-only is accepted as null.
+ * If provided, it must be between 6 and 35 characters.
  */
-export function validateUpiTransactionRef(ref) {
+export function validateUpiTransactionRef(ref, isRequired = false) {
   const clean = (ref || "").trim();
   if (!clean) {
-    return "UPI Transaction Reference Number (UTR) is mandatory.";
+    return isRequired ? "UPI Transaction Reference Number (UTR) is mandatory." : null;
   }
   if (clean.length < 6) {
     return "UPI Transaction Reference must be at least 6 characters (e.g. 12-digit UTR).";

@@ -434,7 +434,13 @@ export default function StepReview() {
               <div>
                 <span className="text-[#8B6E32] text-[11px] font-medium block">UPI Transaction Reference (UTR)</span>
                 <span className="font-mono text-xs font-bold text-[#25201A] block mt-0.5">
-                  {formData.payment?.transactionReference || "—"}
+                  {formData.payment?.transactionReference ? (
+                    formData.payment.transactionReference
+                  ) : (
+                    <span className="text-[#8B6E32] font-sans font-normal text-[11px] italic">
+                      Not provided (Verified via screenshot)
+                    </span>
+                  )}
                 </span>
               </div>
 

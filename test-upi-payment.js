@@ -53,8 +53,9 @@ console.log('\n--- 2. Testing UPI Transaction Reference (UTR) Validation ---');
 assert(validateUpiTransactionRef('123456789012') === null, 'Valid 12-digit numeric UTR accepted');
 assert(validateUpiTransactionRef('UPI-9876543210') === null, 'Valid alphanumeric reference (10-22 chars) accepted');
 assert(typeof validateUpiTransactionRef('12345') === 'string', 'Rejects too short UTR (< 6 chars)');
-assert(typeof validateUpiTransactionRef('') === 'string', 'Rejects empty UTR');
-assert(typeof validateUpiTransactionRef('   ') === 'string', 'Rejects whitespace-only UTR');
+assert(validateUpiTransactionRef('') === null, 'Accepts empty UTR when optional (default)');
+assert(validateUpiTransactionRef('   ') === null, 'Accepts whitespace-only UTR when optional');
+assert(typeof validateUpiTransactionRef('', true) === 'string', 'Rejects empty UTR when isRequired=true');
 assert(typeof validateUpiTransactionRef('1234567890123456789012345678901234567890') === 'string', 'Rejects overly long UTR (> 35 chars)');
 
 console.log('\n--- 3. Testing Payment Proof File Validation ---');
