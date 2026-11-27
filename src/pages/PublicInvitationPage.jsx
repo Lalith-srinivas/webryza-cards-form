@@ -7,6 +7,7 @@ import TempleHeritage from "../templates/TempleHeritage";
 import ElegantPastel from "../templates/ElegantPastel";
 import LakeComoLetters from "../templates/LakeComoLetters";
 import { mapFirestoreToTemplateData } from "../utils/templateDataMapper";
+import { isWeddingCardTrashed } from "../utils/cardStatus";
 import { sampleWeddingData } from "../templates/sampleWeddingData";
 import { sampleTempleData } from "../templates/sampleTempleData";
 import { samplePastelData } from "../templates/samplePastelData";
@@ -20,6 +21,7 @@ import {
   ShieldAlert,
   Eye,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
 
 const TEMPLATE_COMPONENTS = {
@@ -98,14 +100,30 @@ export default function PublicInvitationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPermissionDenied, setIsPermissionDenied] = useState(false);
+  const [isTrashed, setIsTrashed] = useState(false);
+  const [isNotFound, setIsNotFound] = useState(false);
   const [weddingData, setWeddingData] = useState(null);
   const [templateId, setTemplateId] = useState("royal-gold");
   const [matchedDocRef, setMatchedDocRef] = useState(null);
+
+  // Helper to clear any client-side cached data for this wedding
+  const clearLocalCache = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && weddingIdentifier) {
+        const localKey = `webryza_invitation_${weddingIdentifier}`;
+        localStorage.removeItem(localKey);
+        sessionStorage.removeItem(localKey);
+      }
+    } catch {
+      // Ignore cache clearing errors
+    }
+  }, [weddingIdentifier]);
 
   // Fetch wedding invitation from local storage or Firestore
   const fetchWeddingInvitation = useCallback(async () => {
     if (!weddingIdentifier) {
       setError("No wedding invitation identifier provided in the URL.");
+      setIsNotFound(true);
       setLoading(false);
       return;
     }
@@ -113,6 +131,8 @@ export default function PublicInvitationPage() {
     setLoading(true);
     setError(null);
     setIsPermissionDenied(false);
+    setIsTrashed(false);
+    setIsNotFound(false);
 
     let docData = null;
     let hadPermissionError = false;
@@ -232,7 +252,7 @@ export default function PublicInvitationPage() {
     }
 
     // =========================================================================
-    // 3. Client-side Local Storage Check (Graceful fallback if network is offline)
+    // 3. Client-side Local Storage Check (Graceful fallback ONLY if network offline)
     // =========================================================================
     if (!docData) {
       try {
@@ -241,7 +261,7 @@ export default function PublicInvitationPage() {
           const storedStr = localStorage.getItem(localKey) || sessionStorage.getItem(localKey);
           if (storedStr) {
             const parsed = JSON.parse(storedStr);
-            if (parsed && (parsed.brideName || parsed.weddingId)) {
+            if (parsed && (parsed.brideName || parsed.weddingId) && !isWeddingCardTrashed(parsed)) {
               docData = parsed;
             }
           }
@@ -251,29 +271,44 @@ export default function PublicInvitationPage() {
       }
     }
 
-    // If still not found, show user-facing error without fake placeholder overrides
+    // =========================================================================
+    // 4. Validate Deletion & Existence Status
+    // =========================================================================
+    // If not found in records:
     if (!docData) {
+      clearLocalCache();
+      setIsTrashed(false);
+      setIsNotFound(true);
+      setWeddingData(null);
       if (hadPermissionError) {
         setIsPermissionDenied(true);
-        setError(
-          "Firebase Firestore Security Rules on Firebase Console currently block public read access to 'wedding_cards'."
-        );
+        setError("Firebase Firestore Security Rules currently block public read access.");
       } else {
-        setError(
-          `Wedding invitation "${weddingIdentifier}" was not found in our records. Please verify the URL on your invitation card.`
-        );
+        setError("Invitation Not Found");
       }
       setLoading(false);
       return;
     }
 
-    // Centralized Data Mapping: transforms Firestore document into sanitized template payload
-    const safeWeddingPayload = mapFirestoreToTemplateData(docData, weddingIdentifier);
+    // If record exists but is moved to Trash (soft-deleted):
+    if (isWeddingCardTrashed(docData)) {
+      clearLocalCache();
+      setIsTrashed(true);
+      setIsNotFound(false);
+      setWeddingData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
+    // Record is active: Map template data and display wedding website normally
+    setIsTrashed(false);
+    setIsNotFound(false);
+    const safeWeddingPayload = mapFirestoreToTemplateData(docData, weddingIdentifier);
     setTemplateId(safeWeddingPayload.templateId);
     setWeddingData(safeWeddingPayload);
     setLoading(false);
-  }, [weddingIdentifier]);
+  }, [weddingIdentifier, clearLocalCache]);
 
   useEffect(() => {
     if (isCardUrl) {
@@ -281,7 +316,7 @@ export default function PublicInvitationPage() {
     }
   }, [isCardUrl, fetchWeddingInvitation]);
 
-  // Real-time listener: updates wedding data instantly when admin uploads/replaces/removes video
+  // Real-time listener: updates wedding data instantly when admin modifies, trashes, or restores card
   useEffect(() => {
     if (!matchedDocRef) return;
 
@@ -290,20 +325,37 @@ export default function PublicInvitationPage() {
       (snapshot) => {
         if (snapshot.exists()) {
           const freshData = { id: snapshot.id, ...snapshot.data() };
-          const safePayload = mapFirestoreToTemplateData(freshData, weddingIdentifier);
-          setWeddingData(safePayload);
-          setTemplateId(safePayload.templateId);
+          if (isWeddingCardTrashed(freshData)) {
+            // Live moved to Trash: instantly block access and clear cached data
+            clearLocalCache();
+            setIsTrashed(true);
+            setIsNotFound(false);
+            setWeddingData(null);
+          } else {
+            // Live active or restored by admin: immediately render wedding website
+            setIsTrashed(false);
+            setIsNotFound(false);
+            const safePayload = mapFirestoreToTemplateData(freshData, weddingIdentifier);
+            setWeddingData(safePayload);
+            setTemplateId(safePayload.templateId);
+          }
+        } else {
+          // Permanently deleted from database
+          clearLocalCache();
+          setIsTrashed(false);
+          setIsNotFound(true);
+          setWeddingData(null);
         }
       },
       (err) => {
-        console.warn("Real-time Firestore video sync notice:", err);
+        console.warn("Real-time Firestore card sync notice:", err);
       }
     );
 
     return () => {
       unsubscribe();
     };
-  }, [matchedDocRef, weddingIdentifier]);
+  }, [matchedDocRef, weddingIdentifier, clearLocalCache]);
 
   // Scroll to top when invitation or template changes
   useEffect(() => {
@@ -356,75 +408,94 @@ export default function PublicInvitationPage() {
     );
   }
 
-  // Error / Not Found / Access Restricted State
-  if (error || !weddingData) {
+  // 1. Trashed / Soft-Deleted State
+  if (isTrashed) {
     return (
       <div className="min-h-screen bg-[#140b07] flex items-center justify-center p-4">
-        <div className="max-w-lg w-full bg-[#1c120c] border border-[#D4AF37]/40 rounded-3xl p-6 sm:p-8 text-center text-white shadow-2xl">
-          <div className="w-14 h-14 rounded-full bg-red-950/60 border border-red-500/40 text-red-400 mx-auto flex items-center justify-center mb-4">
+        <div className="max-w-md w-full bg-[#1c120c] border border-[#D4AF37]/30 rounded-3xl p-7 sm:p-9 text-center text-white shadow-2xl space-y-4 animate-fadeIn">
+          <div className="w-16 h-16 rounded-full bg-amber-950/40 border border-[#D4AF37]/40 text-[#D4AF37] mx-auto flex items-center justify-center">
+            <Lock size={26} className="text-[#D4AF37]" />
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] block">
+              WebRyza Cards Studio
+            </span>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#FFFDF9]">
+              Invitation Not Available
+            </h1>
+          </div>
+
+          <p className="text-xs sm:text-sm text-[#EEDEB3]/80 leading-relaxed max-w-sm mx-auto">
+            This wedding invitation is currently unavailable. Please contact the person who shared this link with you.
+          </p>
+
+          <div className="pt-2">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-medium text-white/70 hover:text-white transition-all"
+            >
+              <ArrowLeft size={13} />
+              <span>Return to Home</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Not Found / Permanently Deleted / Access Restricted State
+  if (isNotFound || error || !weddingData) {
+    return (
+      <div className="min-h-screen bg-[#140b07] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#1c120c] border border-white/10 rounded-3xl p-7 sm:p-9 text-center text-white shadow-2xl space-y-4 animate-fadeIn">
+          <div className="w-16 h-16 rounded-full bg-red-950/40 border border-red-500/30 text-rose-400 mx-auto flex items-center justify-center">
             <AlertCircle size={28} />
           </div>
 
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] block mb-1">
-            WebRyza Cards Studio
-          </span>
-
-          <h1 className="font-serif text-2xl font-bold text-[#FFFDF9] mb-2">
-            {isPermissionDenied ? "Database Access Restricted" : "Wedding Invitation Not Found"}
-          </h1>
-
-          <div className="inline-block px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-mono text-[#FDF7B8] mb-3">
-            #{weddingIdentifier}
+          <div className="space-y-1.5">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#D4AF37] block">
+              WebRyza Cards Studio
+            </span>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#FFFDF9]">
+              {isPermissionDenied ? "Database Access Restricted" : "Invitation Not Found"}
+            </h1>
           </div>
 
-          <p className="text-xs text-[#EEDEB3]/80 leading-relaxed mb-4">
-            {error ||
-              "The wedding invitation link you entered could not be found in our database records."}
+          <p className="text-xs sm:text-sm text-[#EEDEB3]/80 leading-relaxed max-w-sm mx-auto">
+            {isPermissionDenied
+              ? "Firebase Firestore Security Rules currently restrict access to this record."
+              : "The wedding invitation link you entered could not be found. Please verify the URL or contact the person who shared it with you."}
           </p>
 
-          {/* Actionable instructions if permission-denied is active in Firebase */}
           {isPermissionDenied && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-left text-xs text-amber-200 space-y-1.5">
+            <div className="mb-2 p-3 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-left text-xs text-amber-200 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-amber-300">
                 <ShieldAlert size={14} />
-                <span>How to fix in Firebase Console:</span>
+                <span>Security Rules Note:</span>
               </div>
-              <p className="text-[11px] text-amber-100 leading-relaxed">
-                Go to <strong>Firebase Console &rarr; Firestore Database &rarr; Rules</strong> and update:
+              <p className="text-[11px] text-amber-100">
+                Ensure <strong>wedding_cards</strong> allows public read access in Firebase Console.
               </p>
-              <pre className="text-[10px] bg-black/50 p-2 rounded-lg text-emerald-300 font-mono overflow-x-auto">
-{`match /wedding_cards/{cardId} {
-  allow read: if true;
-}`}
-              </pre>
             </div>
           )}
 
-          <div className="space-y-2.5">
-            <button
-              type="button"
-              onClick={() => handleLoadSampleDemo("temple-heritage")}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] hover:brightness-105 text-xs font-bold text-[#25201A] transition-all shadow-md"
-            >
-              <Eye size={14} />
-              <span>Preview Demo Wedding Invitation</span>
-            </button>
-
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
               type="button"
               onClick={fetchWeddingInvitation}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-[#FDF7B8] transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-[#FDF7B8] transition-all"
             >
-              <RefreshCw size={13} />
-              <span>Retry Loading</span>
+              <RefreshCw size={12} />
+              <span>Retry</span>
             </button>
 
             <Link
               to="/"
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-medium text-white/70 hover:text-white transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-medium text-white/70 hover:text-white transition-all"
             >
-              <ArrowLeft size={13} />
-              <span>Return to WebRyza Registration</span>
+              <ArrowLeft size={12} />
+              <span>Return to Home</span>
             </Link>
           </div>
         </div>

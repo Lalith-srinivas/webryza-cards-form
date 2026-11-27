@@ -93,7 +93,9 @@ export function normalizePartnerProject(docId, data = {}) {
 
   // Normalize project status (Confirmed / Building / Completed / Cancelled)
   let projectStatus = "Confirmed";
-  if (data.projectStatus) {
+  if (data.isDeleted === true || data.status === "trashed" || data.status === "deleted") {
+    projectStatus = "Cancelled";
+  } else if (data.projectStatus) {
     projectStatus = data.projectStatus;
   } else if (data.websiteUrl && data.websiteUrl.trim() !== "") {
     projectStatus = "Completed";
